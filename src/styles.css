@@ -1199,6 +1199,157 @@ tbody tr:hover {
   justify-content: space-between;
 }
 
+/* ---------------------------------------------------------------- database diagram */
+.db-diagram {
+  position: relative;
+  overflow: auto;
+  max-height: min(78vh, 920px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background:
+    radial-gradient(circle at 1px 1px, var(--border-soft) 1px, transparent 0) 0 0 / 22px 22px,
+    var(--bg);
+}
+
+.db-diagram__wires {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.db-diagram__edge-label {
+  fill: var(--text-dimmer);
+  font-size: 10px;
+  font-family: var(--mono);
+}
+
+.db-diagram__lanes {
+  position: relative;
+  z-index: 2;
+  padding: 14px 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.db-lane__title {
+  margin: 0 0 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dimmer);
+}
+
+.db-lane__tables {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.db-table {
+  display: block;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+}
+
+.db-table:hover {
+  border-color: var(--accent);
+  text-decoration: none;
+}
+
+.db-table--focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.db-table__head {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 8px 10px;
+  background: var(--bg-raised-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.db-table__name {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.db-table__entity {
+  font-size: 11px;
+  color: var(--text-dimmer);
+}
+
+.db-table__body {
+  padding: 2px 0 4px;
+}
+
+.db-table__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 10px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.db-table__row--empty,
+.db-table__row--more {
+  color: var(--text-dimmer);
+  font-size: 11.5px;
+}
+
+.db-table__col {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.db-table__col-name {
+  font-family: var(--mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.db-table__col-type {
+  color: var(--text-dimmer);
+  font-family: var(--mono);
+  font-size: 11px;
+  flex: 0 0 auto;
+}
+
+.db-key {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0 4px;
+  border-radius: 3px;
+  line-height: 16px;
+}
+
+.db-key--pk {
+  background: rgba(70, 215, 164, 0.16);
+  color: var(--green);
+}
+
+.db-key--fk {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
 @media (max-width: 900px) {
   .layout {
     grid-template-columns: 1fr;

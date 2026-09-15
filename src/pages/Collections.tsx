@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 
-import { Mermaid } from '../components/Mermaid';
+import { DatabaseDiagram } from '../components/DatabaseDiagram';
 import {
 	Badge,
 	Collapsible,
@@ -15,8 +15,7 @@ import {
 	SourceLink,
 	UseCaseLink,
 } from '../components/ui';
-import { useData, useRepoSchemas, useSchema } from '../data';
-import { collectionErd, fieldsFromSchema, serviceErd } from '../lib/erd';
+import { useData, useSchema } from '../data';
 import type { CollectionOpKind, MongoCollection, SchemaField } from '../types';
 
 const KIND_LABEL: Record<CollectionOpKind, string> = {
@@ -53,7 +52,7 @@ export function CollectionsPage() {
 	const [query, setQuery] = useState('');
 	const repo = params.get('repo') ?? 'all';
 	const access = params.get('access') ?? 'all';
-	const view = params.get('view') ?? 'erd';
+	const view = params.get('view') ?? 'diagram';
 
 	const collections = useMemo(() => {
 		const needle = query.trim().toLowerCase();
@@ -80,15 +79,14 @@ export function CollectionsPage() {
 			);
 	}, [core.collections, repo, access, query]);
 
-	const erdRepo = repo === 'all' ? 'tmf658' : repo;
-	const erdChart = useMemo(() => {
-		const scope = (core.collections ?? []).filter(c => c.repoId === erdRepo);
-		return serviceErd(scope);
-	}, [core.collections, erdRepo]);
+	const diagramRepo = repo === 'all' ? 'tmf658' : repo;
+	const diagramCollections = useMemo(() => {
+		return (core.collections ?? []).filter(c => c.repoId === diagramRepo);
+	}, [core.collections, diagramRepo]);
 
 	const setParam = (key: string, value: string) => {
 		const next = new URLSearchParams(params);
-		if (value === 'all' || (key === 'view' && value === 'erd')) next.delete(key);
+		if (value === 'all' || (key === 'view' && value === 'diagram')) next.delete(key);
 		else next.set(key, value);
 		setParams(next, { replace: true });
 	};
@@ -126,10 +124,10 @@ export function CollectionsPage() {
 					<option value="write">Has create / upsert</option>
 					<option value="query">Has query</option>
 				</select>
-				<select className="select" value={view} onChange={e => setParam('view', e.target.value)}>
-					<option value="erd">ERD</option>
+				<select className="select" value={view === 'erd' ? 'diagram' : view} onChange={e => setParam('view', e.target.value)}>
+					<option value="diagram">Diagram</option>
 					<option value="table">Table</option>
-					<option value="both">ERD + table</option>
+					<option value="both">Diagram + table</option>
 				</select>
 				<span className="dimmer" style={{ fontSize: 12.5, marginLeft: 'auto' }}>
 					{collections.length.toLocaleString()} of {(core.collections ?? []).length.toLocaleString()}
@@ -138,29 +136,26 @@ export function CollectionsPage() {
 
 			{view !== 'table' ? (
 				<Section
-					title="Entity-relationship diagram"
+					title="Database diagram"
 					subtitle={
 						repo === 'all'
 							? 'TMF658 is the loyalty system of record — pick a service to see that database'
-							: `${core.repos.find(r => r.id === erdRepo)?.title ?? erdRepo} collections that reference each other`
+							: `${core.repos.find(r => r.id === diagramRepo)?.title ?? diagramRepo} collections as tables, columns, and links`
 					}
 				>
-					{erdChart ? (
-						<Mermaid chart={erdChart} />
+					{diagramCollections.length ? (
+						<DatabaseDiagram collections={diagramCollections} />
 					) : (
-						<Empty>
-							No in-service collection links resolved for this filter. Isolated collections still
-							appear in the table.
-						</Empty>
+						<Empty>No collections in this service.</Empty>
 					)}
 					<p className="dimmer" style={{ fontSize: 12.5, marginTop: 10 }}>
-						Crow&apos;s foot from a document field or an imported collection constant. Open a
-						collection for attributes, create vs query, and its neighbourhood ERD.
+						Each box is a Mongo collection. PK/FK come from the document type and imported
+						collection constants. Open a table for create vs query and its neighbourhood.
 					</p>
 				</Section>
 			) : null}
 
-			{view !== 'erd' ? (
+			{view !== 'diagram' && view !== 'erd' ? (
 				<div className="table-wrap table-wrap--freeze">
 					<table>
 						<thead>
@@ -220,7 +215,7 @@ export function CollectionsPage() {
 					</table>
 				</div>
 			) : null}
-			{view !== 'erd' && collections.length === 0 ? (
+			{view !== 'diagram' && view !== 'erd' && collections.length === 0 ? (
 				<Empty>No collections matched those filters.</Empty>
 			) : null}
 		</>
@@ -233,7 +228,6 @@ export function CollectionDetailPage() {
 	const decoded = collectionId ? decodeURIComponent(collectionId) : '';
 	const collection = decoded ? indexes.collectionById.get(decoded) : undefined;
 	const schema = useSchema(collection?.entitySchemaId);
-	const repoSchemas = useRepoSchemas(collection?.repoId ?? null);
 
 	if (!collection) {
 		return (
@@ -254,17 +248,9 @@ export function CollectionDetailPage() {
 		);
 	const inRepo = related.filter(r => r.link.kind !== 'same-name');
 	const sameName = related.filter(r => r.link.kind === 'same-name');
-	const neighborFields = new Map(
-		(repoSchemas ?? [])
-			.filter(s => inRepo.some(r => r.target.entitySchemaId === s.id))
-			.map(s => [inRepo.find(r => r.target.entitySchemaId === s.id)!.target.id, s.fields] as const),
+	const neighborhood = [collection, ...inRepo.map(r => r.target)].filter(
+		(c, i, all) => all.findIndex(x => x.id === c.id) === i,
 	);
-	const diagram = collectionErd({
-		focus: collection,
-		related: inRepo,
-		focusFields: fieldsFromSchema(schema),
-		neighborFields,
-	});
 
 	return (
 		<>
@@ -321,14 +307,14 @@ export function CollectionDetailPage() {
 			</div>
 
 			<Section
-				title="Entity-relationship diagram"
+				title="Database diagram"
 				subtitle={
 					inRepo.length
 						? `${collection.name} and ${inRepo.length} related collection(s)`
-						: 'this collection has no resolved in-service links'
+						: 'this collection as a table — no resolved in-service links'
 				}
 			>
-				<Mermaid chart={diagram} />
+				<DatabaseDiagram collections={neighborhood} focusId={collection.id} fieldLimit={18} />
 			</Section>
 
 			<Section
