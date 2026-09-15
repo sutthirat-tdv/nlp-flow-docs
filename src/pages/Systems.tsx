@@ -45,6 +45,13 @@ export function SystemsPage() {
 								<Link to="/database">Browse every Mongo collection →</Link>
 							</p>
 						) : null}
+						{system.kind === 'http' ? (
+							<p style={{ marginTop: 0 }}>
+								<Link to={`/dependencies?system=${encodeURIComponent(system.id)}`}>
+									Browse axios calls to {system.title} →
+								</Link>
+							</p>
+						) : null}
 						<div className="badges" style={{ marginBottom: 12 }}>
 							{system.usedByRepos.map(repoId => (
 								<RepoBadge key={repoId} repoId={repoId} />

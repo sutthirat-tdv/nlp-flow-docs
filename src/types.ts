@@ -4,6 +4,7 @@
  */
 export type {
 	CollectionAccess,
+	CollectionColumn,
 	CollectionLink,
 	CollectionOpKind,
 	CollectionOperation,
@@ -14,6 +15,11 @@ export type {
 	Endpoint,
 	Flow,
 	FlowStep,
+	HttpAccess,
+	HttpClient,
+	HttpLink,
+	HttpOperation,
+	HttpVerb,
 	MongoCollection,
 	RepoDoc,
 	RepoStats,
@@ -29,6 +35,7 @@ import type {
 	Consumer,
 	DownstreamSystem,
 	Endpoint,
+	HttpClient,
 	MongoCollection,
 	RepoDoc,
 	Topic,
@@ -72,6 +79,7 @@ export interface CoreData {
 	topics: Topic[];
 	systems: DownstreamSystem[];
 	collections: MongoCollection[];
+	httpClients: HttpClient[];
 	stats: {
 		repos: number;
 		useCases: number;
@@ -80,6 +88,7 @@ export interface CoreData {
 		topics: number;
 		schemas: number;
 		collections: number;
+		httpClients: number;
 		flows: number;
 		crossServiceFlows: number;
 	};

@@ -188,7 +188,9 @@ export function GuidePage() {
             the BFFs keep their own collections as local read models. See{" "}
             <Link to="/database">Mongo collections</Link> for the name as it is
             created, which use case inserts vs queries it, and how documents
-            point at other collections.
+            point at other collections. See{' '}
+            <Link to="/dependencies">HTTP dependencies</Link> for every axios call
+            (D03, SAP, PNS, IKM) a use case actually makes.
           </li>
           <li>
             <strong>DTO</strong> — request, response and event shapes, with{" "}

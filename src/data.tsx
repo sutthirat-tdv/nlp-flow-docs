@@ -28,6 +28,7 @@ interface Indexes {
   systemById: Map<string, CoreData["systems"][number]>;
   collectionById: Map<string, CoreData["collections"][number]>;
   collectionsBySchemaId: Map<string, CoreData["collections"][number][]>;
+  httpClientById: Map<string, CoreData["httpClients"][number]>;
   schemaSummaryById: Map<string, CoreData["schemaIndex"][number]>;
   flowSummaryById: Map<string, CoreData["flowIndex"][number]>;
   /** Endpoint id / consumer id -> flow that starts there. */
@@ -85,6 +86,7 @@ function buildIndexes(core: CoreData): Indexes {
     systemById: new Map(core.systems.map((s) => [s.id, s])),
     collectionById: new Map((core.collections ?? []).map((c) => [c.id, c])),
     collectionsBySchemaId,
+    httpClientById: new Map((core.httpClients ?? []).map((c) => [c.id, c])),
     schemaSummaryById: new Map(core.schemaIndex.map((s) => [s.id, s])),
     flowSummaryById: new Map(core.flowIndex.map((f) => [f.id, f])),
     flowByEntry,
@@ -112,15 +114,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setCore({
           ...raw,
           collections: raw.collections ?? [],
+          httpClients: raw.httpClients ?? [],
           useCases: raw.useCases.map((u) => ({
             ...u,
             collectionAccess: u.collectionAccess ?? [],
+            httpAccess: u.httpAccess ?? [],
           })),
           topics,
           stats: {
             ...raw.stats,
             topics: topics.length,
             collections: (raw.collections ?? []).length,
+            httpClients: (raw.httpClients ?? []).length,
           },
         });
       })

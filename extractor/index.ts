@@ -15,6 +15,7 @@ import {
   Consumer,
   DownstreamSystem,
   Endpoint,
+  HttpClient,
   MongoCollection,
   RepoDoc,
   Schema,
@@ -22,6 +23,7 @@ import {
   UseCase,
 } from "./model.js";
 import { linkSameNameCollections } from "./extract-collections.js";
+import { linkSameClientHttp } from "./extract-http.js";
 import { Manifest } from "./sync.js";
 
 function readManifest(config: DocsConfig): Manifest {
@@ -101,7 +103,7 @@ function main(): void {
     console.log(
       `${extraction.useCases.length} use cases, ${extraction.endpoints.length} endpoints, ` +
         `${extraction.consumers.length} consumers, ${extraction.schemas.length} schemas, ` +
-        `${extraction.collections.length} collections`,
+        `${extraction.collections.length} collections, ${extraction.httpClients.length} http clients`,
     );
   }
 
@@ -111,6 +113,8 @@ function main(): void {
   const schemas: Schema[] = extractions.flatMap((e) => e.schemas);
   const collections: MongoCollection[] = extractions.flatMap((e) => e.collections);
   linkSameNameCollections(collections);
+  const httpClients: HttpClient[] = extractions.flatMap((e) => e.httpClients);
+  linkSameClientHttp(httpClients);
 
   // ------------------------------------------------------------ topics
   const topicMap = new Map<string, Topic>();
@@ -240,6 +244,7 @@ function main(): void {
         consumers: extraction.consumers.length,
         schemas: extraction.schemas.length,
         collections: extraction.collections.length,
+        httpClients: extraction.httpClients.length,
         topicsProduced: new Set(
           extraction.useCases.flatMap((u) => u.producesTopics),
         ).size,
@@ -302,6 +307,9 @@ function main(): void {
     topics,
     schemas: schemas.sort((a, b) => a.name.localeCompare(b.name)),
     collections: collections.sort((a, b) => a.name.localeCompare(b.name)),
+    httpClients: httpClients.sort(
+      (a, b) => a.system.localeCompare(b.system) || a.name.localeCompare(b.name),
+    ),
     flows,
     systems,
     stats: {
@@ -312,6 +320,7 @@ function main(): void {
       topics: topics.length,
       schemas: schemas.length,
       collections: collections.length,
+      httpClients: httpClients.length,
       flows: flows.length,
       crossServiceFlows: flows.filter((f) => f.crossService).length,
     },
@@ -334,6 +343,7 @@ function main(): void {
     topics: catalog.topics,
     systems: catalog.systems,
     collections: catalog.collections,
+    httpClients: catalog.httpClients,
     stats: catalog.stats,
     schemaIndex: schemas.map((s) => ({
       id: s.id,

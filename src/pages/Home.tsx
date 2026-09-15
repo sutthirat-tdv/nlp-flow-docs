@@ -82,6 +82,11 @@ export function HomePage() {
           to="/database"
         />
         <Stat
+          value={(core.stats.httpClients ?? 0).toLocaleString()}
+          label="HTTP dependencies"
+          to="/dependencies"
+        />
+        <Stat
           value={core.stats.crossServiceFlows.toLocaleString()}
           label="Cross service flows"
           to="/flows?scope=cross"

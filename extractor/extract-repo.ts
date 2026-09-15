@@ -38,6 +38,7 @@ import {
 	DependencyKind,
 	Endpoint,
 	MongoCollection,
+	HttpClient,
 	Schema,
 	SchemaField,
 	SchemaLayer,
@@ -45,6 +46,7 @@ import {
 	UseCase,
 } from './model.js';
 import { attachCollectionUsage, extractMongoCollections } from './extract-collections.js';
+import { attachHttpUsage, extractHttpClients } from './extract-http.js';
 import { RepoProvenance } from './sync.js';
 
 const TOPIC_PATTERN = /^[a-z][A-Za-z0-9]*(?:\.[A-Za-z0-9_-]+){1,5}$/;
@@ -78,6 +80,11 @@ const SYSTEM_BY_PATH: [RegExp, string][] = [
 	[/\/atn\//, 'atn'],
 	[/\/ctm\//, 'ctm'],
 	[/\/mpay\//, 'mpay'],
+	[/\/aaf\//, 'aaf'],
+	[/\/ac\//, 'ac'],
+	[/esb-gateway/, 'esb-gateway'],
+	[/channel-cms/, 'cms'],
+	[/\/email\//, 'email'],
 	[/\/storage\/|minio/i, 'storage'],
 	[/\/openApi\//, 'openapi-master-data'],
 	[/\/dt\//, 'd03'],
@@ -136,6 +143,7 @@ export interface RepoExtraction {
 	consumers: Consumer[];
 	schemas: Schema[];
 	collections: MongoCollection[];
+	httpClients: HttpClient[];
 	/** topic string -> alias metadata */
 	topicAliases: Map<string, { enumName: string; member: string; source: SourceRef }[]>;
 	classIndex: Map<string, ClassIndexEntry>;
@@ -676,6 +684,14 @@ export function extractRepo(
 		domainFromPath: file => domainFromPath(repo, file),
 	});
 
+	const httpClients = extractHttpClients({
+		repo,
+		prov,
+		files,
+		parse,
+		domainFromPath: file => domainFromPath(repo, file),
+	});
+
 	// ------------------------------------------------------------- use cases
 	const useCases: UseCase[] = [];
 	const useCaseByClass = new Map<string, UseCase>();
@@ -741,6 +757,7 @@ export function extractRepo(
 				invokedBy: [],
 				calls,
 				collectionAccess: [],
+				httpAccess: [],
 				errors,
 				tags: [],
 			};
@@ -987,6 +1004,7 @@ export function extractRepo(
 							.map(d => unwrapType(d.type))
 							.filter(d => /Manager$|Service$/.test(d)),
 						collectionAccess: [],
+						httpAccess: [],
 						errors: [],
 						tags: ['manager'],
 					};
@@ -1018,6 +1036,7 @@ export function extractRepo(
 	}
 
 	attachCollectionUsage(useCases, collections, classIndex);
+	attachHttpUsage(useCases, httpClients, classIndex);
 
 	// -------------------------------------------------------------- metadata
 	const envVars: { name: string; comment?: string }[] = [];
@@ -1052,6 +1071,7 @@ export function extractRepo(
 		consumers,
 		schemas,
 		collections,
+		httpClients,
 		topicAliases,
 		classIndex,
 		classTopics,

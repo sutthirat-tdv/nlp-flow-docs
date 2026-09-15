@@ -6,6 +6,7 @@ import {
 	CollectionLink,
 	Collapsible,
 	Empty,
+	HttpClientLink,
 	KeyValue,
 	PageHead,
 	RepoBadge,
@@ -181,6 +182,7 @@ function DependencyRow({ dep }: { dep: Dependency }) {
 	const { indexes } = useData();
 	const target = dep.targetId ? indexes.useCaseById.get(dep.targetId) : undefined;
 	const collection = dep.targetId ? indexes.collectionById.get(dep.targetId) : undefined;
+	const httpClient = dep.targetId ? indexes.httpClientById.get(dep.targetId) : undefined;
 	return (
 		<tr>
 			<td className="mono" style={{ fontSize: 12.5 }}>
@@ -189,6 +191,8 @@ function DependencyRow({ dep }: { dep: Dependency }) {
 			<td className="mono" style={{ fontSize: 12.5 }}>
 				{collection ? (
 					<CollectionLink id={collection.id} />
+				) : httpClient ? (
+					<HttpClientLink id={httpClient.id} />
 				) : target ? (
 					<UseCaseLink id={target.id} />
 				) : (
@@ -532,6 +536,61 @@ export function UseCaseDetailPage() {
 										</tr>
 									);
 								})}
+							</tbody>
+						</table>
+					</div>
+				)}
+			</Section>
+
+			<Section
+				title="HTTP dependencies"
+				subtitle={
+					(useCase.httpAccess ?? []).length
+						? `${useCase.httpAccess.length} axios client(s) reached from ${useCase.entryMethod}()`
+						: 'none reached from the entry method'
+				}
+			>
+				{(useCase.httpAccess ?? []).length === 0 ? (
+					<Empty>
+						This use case does not call an Axios client from <code>{useCase.entryMethod}()</code>.
+					</Empty>
+				) : (
+					<div className="table-wrap table-wrap--freeze">
+						<table>
+							<thead>
+								<tr>
+									<th>Client</th>
+									<th>Calls</th>
+								</tr>
+							</thead>
+							<tbody>
+								{(useCase.httpAccess ?? []).map(access => (
+									<tr key={access.clientId}>
+										<td>
+											<HttpClientLink id={access.clientId} />
+										</td>
+										<td>
+											<div className="badges">
+												{access.operations.map(o => (
+													<Badge
+														key={`${o.name}:${o.httpMethod}:${o.path}`}
+														tone={
+															o.httpMethod === 'GET'
+																? 'accent'
+																: o.httpMethod === 'POST'
+																	? 'green'
+																	: o.httpMethod === 'DELETE'
+																		? 'red'
+																		: 'amber'
+														}
+													>
+														{o.httpMethod} /{o.path}
+													</Badge>
+												))}
+											</div>
+										</td>
+									</tr>
+								))}
 							</tbody>
 						</table>
 					</div>

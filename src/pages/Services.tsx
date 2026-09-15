@@ -50,6 +50,9 @@ export function ServicesPage() {
 								{repo.stats.collections ? (
 									<Badge tone="green">{repo.stats.collections} collections</Badge>
 								) : null}
+								{repo.stats.httpClients ? (
+									<Badge tone="teal">{repo.stats.httpClients} HTTP clients</Badge>
+								) : null}
 								{repo.packageVersion ? (
 									<Badge tone="purple">v{repo.packageVersion}</Badge>
 								) : null}
@@ -195,6 +198,11 @@ export function ServiceDetailPage() {
 					value={repo.stats.collections}
 					label="Mongo collections"
 					to={`/database?repo=${repo.id}`}
+				/>
+				<Stat
+					value={repo.stats.httpClients}
+					label="HTTP dependencies"
+					to={`/dependencies?repo=${repo.id}`}
 				/>
 				<Stat value={repo.stats.domains} label="Domains" />
 				<Stat value={repo.stats.files} label="Source files" />

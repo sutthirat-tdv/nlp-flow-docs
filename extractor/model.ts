@@ -117,6 +117,8 @@ export interface UseCase {
 	calls: string[];
 	/** Mongo collections this use case (or a repository it calls) actually touches. */
 	collectionAccess: CollectionAccess[];
+	/** Axios/HTTP clients this use case actually calls. */
+	httpAccess: HttpAccess[];
 	/** Notable business rules: thrown errors and guard conditions. */
 	errors: string[];
 	tags: string[];
@@ -138,6 +140,15 @@ export interface CollectionLink {
 	/** Field name, imported constant, entity type, or same collection name. */
 	via: string;
 	kind: 'field' | 'type' | 'import' | 'same-name';
+}
+
+/** Compact column on a Mongo collection, for the database diagram. */
+export interface CollectionColumn {
+	name: string;
+	type: string;
+	optional: boolean;
+	pk: boolean;
+	fk: boolean;
 }
 
 export interface CollectionAccess {
@@ -166,6 +177,51 @@ export interface MongoCollection {
 	/** Use cases whose call graph hits this repository. */
 	usedByUseCaseIds: string[];
 	related: CollectionLink[];
+	/** Document fields when the entity schema resolved — drawn on the database diagram. */
+	fields: CollectionColumn[];
+	source: SourceRef;
+}
+
+export type HttpVerb = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+
+export interface HttpOperation {
+	/** Repository / client method name, e.g. "findOneById". */
+	name: string;
+	httpMethod: HttpVerb;
+	/** Path as called, with params as `:id`. Host comes from `baseUrlRef`. */
+	path: string;
+	via: 'factory' | 'axios';
+	source: SourceRef;
+}
+
+export interface HttpLink {
+	clientId: string;
+	via: string;
+	kind: 'same-client';
+}
+
+export interface HttpAccess {
+	clientId: string;
+	operations: { name: string; httpMethod: HttpVerb; path: string }[];
+}
+
+/**
+ * An outbound HTTP client that goes through AxiosService (or a D03/PNS/AAF
+ * factory wrapping it). One class per card — CustomerD03Repository, SAPRepository.
+ */
+export interface HttpClient {
+	id: string;
+	repoId: string;
+	name: string;
+	className: string;
+	system: string;
+	domain: string;
+	/** Source expression for the base URL, e.g. D03_CUSTOMER_BASE_URL. */
+	baseUrlRef: string | null;
+	repositoryFile: string;
+	operations: HttpOperation[];
+	usedByUseCaseIds: string[];
+	related: HttpLink[];
 	source: SourceRef;
 }
 
@@ -247,6 +303,7 @@ export interface RepoStats {
 	consumers: number;
 	schemas: number;
 	collections: number;
+	httpClients: number;
 	topicsProduced: number;
 	topicsConsumed: number;
 	domains: number;
@@ -295,6 +352,7 @@ export interface Catalog {
 	topics: Topic[];
 	schemas: Schema[];
 	collections: MongoCollection[];
+	httpClients: HttpClient[];
 	flows: Flow[];
 	systems: DownstreamSystem[];
 	stats: {
@@ -305,6 +363,7 @@ export interface Catalog {
 		topics: number;
 		schemas: number;
 		collections: number;
+		httpClients: number;
 		flows: number;
 		crossServiceFlows: number;
 	};

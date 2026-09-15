@@ -160,6 +160,13 @@ export function CollectionLink({ id }: { id: string }) {
 	);
 }
 
+export function HttpClientLink({ id }: { id: string }) {
+	const { indexes } = useData();
+	const client = indexes.httpClientById.get(id);
+	if (!client) return <span className="mono dimmer">{id.split(':').slice(1).join(':') || id}</span>;
+	return <Link to={`/dependencies/${encodeURIComponent(id)}`}>{client.name}</Link>;
+}
+
 export function SystemLink({ id }: { id: string }) {
 	const { indexes } = useData();
 	const system = indexes.systemById.get(id);

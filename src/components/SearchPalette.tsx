@@ -29,6 +29,7 @@ const KIND_LABEL: Record<string, string> = {
 	consumer: 'Consumer',
 	schema: 'Schema',
 	collection: 'Mongo',
+	http: 'HTTP',
 	service: 'Service',
 };
 
@@ -65,7 +66,7 @@ export function SearchPalette({ onClose }: { onClose: () => void }) {
 				title: u.title,
 				subtitle: `${u.className} · ${u.domain}`,
 				repoId: u.repoId,
-				body: [u.inputType, u.outputType, ...u.producesTopics, ...u.tags, ...(u.collectionAccess ?? []).map(a => a.collectionId)].filter(Boolean).join(' '),
+				body: [u.inputType, u.outputType, ...u.producesTopics, ...u.tags, ...(u.collectionAccess ?? []).map(a => a.collectionId), ...(u.httpAccess ?? []).map(a => a.clientId)].filter(Boolean).join(' '),
 				route: `/use-cases/${encodeURIComponent(u.id)}`,
 			})),
 			...core.topics.map(t => ({
@@ -94,6 +95,15 @@ export function SearchPalette({ onClose }: { onClose: () => void }) {
 				repoId: c.repoId,
 				body: [c.repositoryClass, c.connection, c.entityName, c.domain].filter(Boolean).join(' '),
 				route: `/database/${encodeURIComponent(c.id)}`,
+			})),
+			...(core.httpClients ?? []).map(c => ({
+				id: `http|${c.id}`,
+				kind: 'http',
+				title: c.name,
+				subtitle: `${c.system} · ${c.className} · ${c.usedByUseCaseIds.length} use case(s)`,
+				repoId: c.repoId,
+				body: [c.className, c.system, c.baseUrlRef, ...c.operations.map(o => `${o.httpMethod} ${o.path}`)].filter(Boolean).join(' '),
+				route: `/dependencies/${encodeURIComponent(c.id)}`,
 			})),
 			...core.repos.map(r => ({
 				id: `service|${r.id}`,
@@ -159,7 +169,7 @@ export function SearchPalette({ onClose }: { onClose: () => void }) {
 				<input
 					ref={inputRef}
 					className="palette__input"
-					placeholder="Search flows, endpoints, use cases, topics, schemas, collections…"
+					placeholder="Search flows, endpoints, use cases, topics, schemas, collections, HTTP…"
 					value={query}
 					onChange={e => setQuery(e.target.value)}
 					onKeyDown={e => {

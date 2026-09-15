@@ -19,7 +19,10 @@ export function NotFoundPage() {
 						<Link to="/guide">New joiner guide</Link> — read this first if you are new
 					</li>
 					<li>
-						<Link to="/database">Mongo collections</Link> — what is stored, who writes, who reads
+						<Link to="/database">Mongo collections</Link> — tables, columns, who writes, who reads
+					</li>
+					<li>
+						<Link to="/dependencies">HTTP dependencies</Link> — axios calls to D03, SAP, PNS, …
 					</li>
 					<li>
 						Press <kbd>⌘K</kbd> and search by name

@@ -141,7 +141,9 @@ Then `npm run update`. The site's Releases page already lists recent tags per re
 
 6. `extractor/model.ts` is shared with the website. Keep it free of Node/DOM imports.
 
-7. **Mongo collections** come from `*MongoRepository` (`db.collection(...)` / `collectionName`), not Mongoose. Attribute create vs query from the use-case (or manager) entry method call graph, same as topics — not a class-level union of every repository method.
+7. **Mongo collections** come from `*MongoRepository` (`db.collection(...)` / `collectionName`), not Mongoose. Attribute create vs query from the use-case (or manager) entry method call graph, same as topics — not a class-level union of every repository method. Draw them as a **database diagram** (table cards with columns and PK/FK lines), not a mermaid `erDiagram`.
+
+8. **HTTP dependencies** come from `AxiosService` (and D03/PNS/AAF factories wrapping `this.get` / `this.post` / `this.axios.*`). Attribute calls from the use-case entry method call graph, same as Mongo.
 
 ### Known remaining accuracy issues
 
@@ -165,9 +167,10 @@ Hash router (`HashRouter`) so `dist/` works from any static path.
 | `/flows`, `/flows/:flowId`       | Filterable catalog; **mermaid sequence** (time order) + indented step list            |
 | `/endpoints`, `/endpoints/:id`   | HTTP catalog; request/response fields; link to flow                                   |
 | `/topics`, `/topics/:name`       | Kafka catalog; publishers, consumers, payload schema, family                          |
-| `/use-cases`, `/use-cases/:id`   | Business logic catalog; triggers, I/O schemas, publishes, deps, **Mongo create vs query**, thrown errors |
+| `/use-cases`, `/use-cases/:id`   | Business logic catalog; triggers, I/O schemas, publishes, deps, **Mongo create vs query**, **axios calls**, thrown errors |
 | `/schemas`, `/schemas/:id`       | DTO/entity/enum browser; nested expand; used-by; link to Mongo collection when it is a stored document |
-| `/database`, `/database/:id`     | Mongo collections as an **ERD** (crow's foot from field types / imported constants); create vs query methods; document fields |
+| `/database`, `/database/:id`     | Mongo collections as a **database diagram** (table cards, columns, PK/FK); create vs query methods; document fields |
+| `/dependencies`, `/dependencies/:id` | Outbound **axios** HTTP clients (D03, SAP, PNS, IKM, …); verb + path; use cases that actually call them |
 | `/systems`                       | Downstream blast radius                                                               |
 | `/releases`                      | Commit/tag provenance + how to regenerate                                             |
 
@@ -190,8 +193,9 @@ nlp-flow-docs/
     config.ts              load repos.config.json
     sync.ts                git archive snapshots + provenance
     ast.ts                 TS compiler API helpers (no typechecker)
-    extract-repo.ts        one snapshot → use cases, endpoints, consumers, schemas, collections
-    extract-collections.ts Mongo collection names, ops, links from *MongoRepository
+    extract-repo.ts        one snapshot → use cases, endpoints, consumers, schemas, collections, http clients
+    extract-collections.ts Mongo collection names, ops, links, columns from *MongoRepository
+    extract-http.ts        AxiosService / factory get/post/put/patch/delete calls
     flows.ts               stitch E2E graphs + mermaid
     model.ts               shared types
     index.ts               orchestrate + write public/data

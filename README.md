@@ -26,7 +26,7 @@ Edit `repos.config.json` — set that repo's `branch` to a tag (`"2.31.0"`) or a
 
 ## New joiners
 
-Open **New joiner guide** in the sidebar. The one idea: every cross-service call is a Kafka message; BFFs translate HTTP; the TMF658 service owns loyalty data. **Mongo collections** lists each collection as `db.collection()` creates it, which use cases insert vs query, and how documents link to other collections.
+Open **New joiner guide** in the sidebar. The one idea: every cross-service call is a Kafka message; BFFs translate HTTP; the TMF658 service owns loyalty data. **Mongo collections** is a database diagram of each collection as `db.collection()` creates it, with columns, PK/FK, and which use cases insert vs query. **HTTP dependencies** lists every axios call (D03, SAP, PNS, …) a use case actually makes.
 
 ## What each command does
 

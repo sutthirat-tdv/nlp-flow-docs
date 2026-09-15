@@ -26,6 +26,7 @@ import {
 import { RepoConfig } from './config.js';
 import {
 	CollectionAccess,
+	CollectionColumn,
 	CollectionLink,
 	CollectionOpKind,
 	CollectionOperation,
@@ -244,6 +245,38 @@ function camel(name: string): string {
 	return name.charAt(0).toLowerCase() + name.slice(1);
 }
 
+function columnsFor(
+	coll: MongoCollection,
+	schemaFields: { name: string; type: string; optional?: boolean }[],
+): CollectionColumn[] {
+	const fkNames = new Set(
+		coll.related
+			.filter(r => r.kind !== 'same-name')
+			.map(r => r.via.split(':')[0]?.trim())
+			.filter(Boolean),
+	);
+	if (schemaFields.length) {
+		return schemaFields.map(field => ({
+			name: field.name,
+			type: unwrapType(field.type).replace(/\s+/g, ' ').slice(0, 48),
+			optional: field.optional ?? false,
+			pk: field.name === 'id' || field.name === '_id',
+			fk:
+				fkNames.has(field.name) ||
+				[...fkNames].some(via => via === field.name || via.startsWith(`${field.name}:`)),
+		}));
+	}
+	const columns: CollectionColumn[] = [
+		{ name: 'id', type: 'string', optional: false, pk: true, fk: false },
+	];
+	for (const rel of coll.related.filter(r => r.kind !== 'same-name')) {
+		const name = rel.via.split(':')[0]?.trim();
+		if (!name || columns.some(c => c.name === name)) continue;
+		columns.push({ name, type: 'string', optional: true, pk: false, fk: true });
+	}
+	return columns;
+}
+
 export function extractMongoCollections(args: ExtractCollectionsArgs): MongoCollection[] {
 	const { repo, prov, files, parse, schemaIdFor, schemaFields, domainFromPath } = args;
 	const fileSet = new Set(files);
@@ -338,6 +371,7 @@ export function extractMongoCollections(args: ExtractCollectionsArgs): MongoColl
 					via: name,
 					kind: 'import' as const,
 				})),
+				fields: [],
 				source: sourceRef(repo, prov, rel, lineOf(file, cls)),
 			});
 		}
@@ -387,6 +421,7 @@ export function extractMongoCollections(args: ExtractCollectionsArgs): MongoColl
 
 		coll.related = coll.related.filter(r => byId.has(r.collectionId) || r.kind === 'import');
 		coll.related = coll.related.filter(r => r.collectionId !== coll.id);
+		coll.fields = columnsFor(coll, schemaFields(coll.entitySchemaId));
 	}
 
 	const merged = new Map<string, MongoCollection>();
@@ -408,6 +443,7 @@ export function extractMongoCollections(args: ExtractCollectionsArgs): MongoColl
 		if (!existing.repositoryClass.includes(coll.repositoryClass)) {
 			existing.repositoryClass = `${existing.repositoryClass}, ${coll.repositoryClass}`;
 		}
+		if (!existing.fields.length && coll.fields.length) existing.fields = coll.fields;
 	}
 
 	return [...merged.values()].sort((a, b) => a.name.localeCompare(b.name));
