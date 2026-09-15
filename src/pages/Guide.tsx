@@ -101,10 +101,10 @@ export function GuidePage() {
           any request/reply pair.
         </p>
 
-        <h2>3. The four services, and which one you want</h2>
+        <h2>3. The services, and which one you want</h2>
         <p>
-          Three layers. Requests come in at layer 1, and only layer 3 owns
-          loyalty data.
+          Three request layers, plus scheduled jobs. Requests come in at layer 1,
+          only layer 3 owns loyalty data, and cronjobs publish into the same bus.
         </p>
         <ul>
           <li>
@@ -146,6 +146,15 @@ export function GuidePage() {
             redeem, transfer, expire, tier. Go here when you need to know what
             the platform actually decided and why.
           </li>
+          <li>
+            <strong>
+              <Link to="/services/cronjob">NLP Cronjob</Link>
+            </strong>{" "}
+            — Nest Commander CLI jobs, not HTTP. Reconcile files, expire points,
+            SFTP/SAP, offer notifications. A job typically calls a use case that
+            then publishes a Kafka command into TMF658. Go here when something
+            “ran overnight and broke”.
+          </li>
         </ul>
         <div className="callout">
           <strong>Rule of thumb:</strong> if the question is “what did we answer
@@ -156,7 +165,7 @@ export function GuidePage() {
 
         <h2>4. How the code is laid out</h2>
         <p>
-          All four services are NestJS and follow the same layering, which is
+          All of these services are NestJS and follow the same layering, which is
           why this site can be generated at all:
         </p>
         <ul>
@@ -168,6 +177,11 @@ export function GuidePage() {
           <li>
             <strong>Consumer</strong> (<code>@EntryPoint('topic')</code>) — the
             Kafka equivalent of a controller. Binds a topic to a handler.
+          </li>
+          <li>
+            <strong>Cron command</strong> (<code>@Command</code> in nlp-cronjob) —
+            a scheduled CLI job. Same role as a controller: validate flags, call
+            one use case.
           </li>
           <li>
             <strong>Use case</strong> (<code>*.use-case.ts</code>, one class

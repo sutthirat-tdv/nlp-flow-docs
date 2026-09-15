@@ -8,7 +8,7 @@ export interface RepoConfig {
 	id: string;
 	name: string;
 	title: string;
-	role: 'entrypoint' | 'aggregator' | 'domain';
+	role: 'entrypoint' | 'aggregator' | 'domain' | 'batch';
 	layer: number;
 	summary: string;
 	audience: string;

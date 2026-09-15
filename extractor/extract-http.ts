@@ -493,7 +493,7 @@ export function extractHttpClients(args: ExtractHttpArgs): HttpClient[] {
 
 	for (const rel of files) {
 		if (!/\.ts$/.test(rel) || /\.spec\.ts$|\.test\.ts$|\.d\.ts$|\.module\.ts$/.test(rel)) continue;
-		if (!/infrastructure|externalServices|sharedModules/.test(rel)) continue;
+		if (!/infrastructure|externalServices|sharedModules|\/jobs\//.test(rel)) continue;
 		const file = parse(rel);
 		for (const cls of exportedClasses(file)) {
 			const className = cls.name!.text;

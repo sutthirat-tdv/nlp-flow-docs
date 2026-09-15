@@ -12,6 +12,7 @@ const ARCHITECTURE = `sequenceDiagram
   participant BackOffice as BackOffice
   participant Agg as Aggregator
   participant TMF as TMF658
+  participant Cron as Cron
   Ch ->> OpenAPI: HTTP
   OpenAPI ->> TMF: nlp.pty.* command
   TMF -->> OpenAPI: *ed reply
@@ -20,7 +21,8 @@ const ARCHITECTURE = `sequenceDiagram
   TMF -->> BackOffice: *ed reply
   OpenAPI ->> Agg: registerLoyaltyMember
   Agg ->> TMF: onboardLoyaltyMember
-  TMF -->> Agg: loyaltyMemberOnboarded`;
+  TMF -->> Agg: loyaltyMemberOnboarded
+  Cron ->> TMF: nlp.pty.cleanExpiredPoint`;
 
 export function HomePage() {
   const { core } = useData();
@@ -44,7 +46,7 @@ export function HomePage() {
     <>
       <PageHead title="The NLP loyalty platform, end to end">
         Every HTTP endpoint, Kafka topic, use case, data schema and Mongo
-        collection in the four services below, read directly from the{" "}
+        collection in the services below, read directly from the{" "}
         <code>sit</code> branch of each repository. Start with the{" "}
         <Link to="/guide">new joiner guide</Link>, or press <Badge>⌘K</Badge>{" "}
         and search for whatever you are chasing.
@@ -110,7 +112,7 @@ export function HomePage() {
         <Mermaid chart={ARCHITECTURE} />
       </Section>
 
-      <Section title="The four services" subtitle="in request order">
+      <Section title="The services" subtitle="HTTP entry, aggregator, domain, then scheduled jobs">
         <div className="grid grid--2">
           {core.repos
             .slice()
@@ -140,7 +142,7 @@ export function HomePage() {
 
       <Section
         title="Platform entry topics"
-        subtitle="Kafka messages produced outside these four repos"
+        subtitle="Kafka messages produced outside these repos"
         actions={<Link to="/flows?entry=topic">all topic flows →</Link>}
       >
         <div className="table-wrap">

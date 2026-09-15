@@ -1,6 +1,6 @@
 # NLP Loyalty Platform — Flow Documentation Site
 
-This file is the **durable requirement**. Paste it (or link it) into the next Cursor session and the agent should continue in the same direction without re-discovering the four repos.
+This file is the **durable requirement**. Paste it (or link it) into the next Cursor session and the agent should continue in the same direction without re-discovering the service repos.
 
 Location of the site: `nlp-flow-docs/` next to the four service checkouts in `corp-ais/`.
 
@@ -8,7 +8,7 @@ Location of the site: `nlp-flow-docs/` next to the four service checkouts in `co
 
 ## Resume prompt (paste this)
 
-> Continue the NLP loyalty flow documentation site in `nlp-flow-docs/`. Read `REQUIREMENTS.md` first and treat it as the source of truth. The site is generated from four NestJS repos on `origin/sit`. Do not hand-write catalogs. To refresh: `npm run update` (or `npm run generate:offline` if GitHub is unreachable). Keep extractor conventions, call-graph topic attribution, sharded `public/data/` output, and the React catalog UI. Improve accuracy, onboarding, and regenerate-from-tag/commit — do not replace the pipeline with a different architecture.
+> Continue the NLP loyalty flow documentation site in `nlp-flow-docs/`. Read `REQUIREMENTS.md` first and treat it as the source of truth. The site is generated from the NestJS repos in `repos.config.json` on `origin/sit` (OpenAPI BFF, Back Office BFF, agg-common, TMF658, nlp-cronjob). Do not hand-write catalogs. To refresh: `npm run update` (or `npm run generate:offline` if GitHub is unreachable). Keep extractor conventions, call-graph topic attribution, sharded `public/data/` output, and the React catalog UI. Improve accuracy, onboarding, and regenerate-from-tag/commit — do not replace the pipeline with a different architecture.
 
 ---
 
@@ -22,6 +22,7 @@ A website a new joiner (or anyone) can use to **look up any use case, flow, and 
 | `backoffice-bff` | `nlp-backoffice-bff`                    | Layer 1 HTTP entry (Back Office console)           |
 | `agg-common`     | `esb-loyalty-management-agg-common`     | Layer 2 Kafka aggregator                           |
 | `tmf658`         | `esb-dos-TMF658-loyalty-management-nlp` | Layer 3 TMF658 domain / system of record           |
+| `cronjob`        | `nlp-cronjob`                           | Layer 4 scheduled Nest Commander jobs              |
 
 Requirements that must remain true:
 
@@ -35,8 +36,8 @@ Requirements that must remain true:
 
 ## Non-goals
 
-- Running the four services, generating OpenAPI from live Swagger, or scraping production.
-- Documenting `nlp-cronjob`, `nlp-backoffice-web`, helm charts, or anything not in `repos.config.json`.
+- Running the services, generating OpenAPI from live Swagger, or scraping production.
+- Documenting `nlp-backoffice-web`, helm charts, or anything not in `repos.config.json`.
 - Perfect control-flow (which `if` branch ran). Static analysis of structure only; pages must say so when a link could not be resolved.
 - Hand-maintained catalogs of endpoints or topics.
 
@@ -137,13 +138,13 @@ Then `npm run update`. The site's Releases page already lists recent tags per re
 
 4. **Every consumed topic gets a flow**, not only “external” ones. HTTP endpoints also get a flow. `external: true` means nothing in these four repos publishes the entry.
 
-5. **Never mutate the four service repos.** Snapshots are read-only.
+5. **Never mutate the service repos.** Snapshots are read-only.
 
 6. `extractor/model.ts` is shared with the website. Keep it free of Node/DOM imports.
 
 7. **Mongo collections** come from `*MongoRepository` (`db.collection(...)` / `collectionName`), not Mongoose. Attribute create vs query from the use-case (or manager) entry method call graph, same as topics — not a class-level union of every repository method. Draw them as a **database diagram** (table cards with columns and PK/FK lines), not a mermaid `erDiagram`.
 
-8. **HTTP dependencies** come from `AxiosService` (and D03/PNS/AAF factories wrapping `this.get` / `this.post` / `this.axios.*`). Attribute calls from the use-case entry method call graph, same as Mongo.
+9. **nlp-cronjob** is a fifth repo. Nest Commander `@Command` classes are catalogued as `CRON /jobs/<name>` endpoints. Jobs use the same use-case / axios / Mongo extractors. Do not skip `origin/sit` for it.
 
 ### Known remaining accuracy issues
 
@@ -165,7 +166,7 @@ Hash router (`HashRouter`) so `dist/` works from any static path.
 | `/guide`                         | **Hand-written** new-joiner mental model (the only prose that is not generated)       |
 | `/services`, `/services/:repoId` | Layer list, who-talks-to-whom matrix, domains, env vars, version                      |
 | `/flows`, `/flows/:flowId`       | Filterable catalog; **mermaid sequence** (time order) + indented step list            |
-| `/endpoints`, `/endpoints/:id`   | HTTP catalog; request/response fields; link to flow                                   |
+| `/endpoints`, `/endpoints/:id`   | HTTP catalog plus **CRON** job commands from nlp-cronjob; request/response fields; link to flow |
 | `/topics`, `/topics/:name`       | Kafka catalog; publishers, consumers, payload schema, family                          |
 | `/use-cases`, `/use-cases/:id`   | Business logic catalog; triggers, I/O schemas, publishes, deps, **Mongo create vs query**, **axios calls**, thrown errors |
 | `/schemas`, `/schemas/:id`       | DTO/entity/enum browser; nested expand; used-by; link to Mongo collection when it is a stored document |

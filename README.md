@@ -1,12 +1,12 @@
 # NLP Loyalty — flow, use-case and schema docs
 
-Generated documentation site for four NestJS services on `origin/sit`. Nothing in the catalogs is hand-written. The durable spec is [`REQUIREMENTS.md`](./REQUIREMENTS.md) — give that to the next agent (or human) who continues this work.
+Generated documentation site for the NestJS services on `origin/sit` listed in `repos.config.json`. Nothing in the catalogs is hand-written. The durable spec is [`REQUIREMENTS.md`](./REQUIREMENTS.md) — give that to the next agent (or human) who continues this work.
 
 Generated catalogs (`public/data/*.json`), snapshots (`.cache/`), `node_modules/`, and build output (`dist/`, `dist-extractor/`) are gitignored. After clone, run generate before `npm run dev`.
 
 ## First run
 
-From this directory, with the four repos checked out as siblings (`../nlp-openapi-bff`, `../nlp-backoffice-bff`, `../esb-loyalty-management-agg-common`, `../esb-dos-TMF658-loyalty-management-nlp`):
+From this directory, with the service repos checked out as siblings (`../nlp-openapi-bff`, `../nlp-backoffice-bff`, `../esb-loyalty-management-agg-common`, `../esb-dos-TMF658-loyalty-management-nlp`, `../nlp-cronjob`):
 
 ```bash
 npm install

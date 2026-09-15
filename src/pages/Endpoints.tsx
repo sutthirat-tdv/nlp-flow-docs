@@ -74,7 +74,7 @@ export function EndpointsPage() {
 					onChange={e => setParam('method', e.target.value)}
 				>
 					<option value="all">Any method</option>
-					{['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map(m => (
+					{['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'CRON'].map(m => (
 						<option key={m} value={m}>
 							{m}
 						</option>

@@ -83,6 +83,25 @@
       ]
     },
     {
+      "id": "cronjob",
+      "name": "nlp-cronjob",
+      "title": "NLP Cronjob",
+      "role": "batch",
+      "layer": 4,
+      "summary": "Scheduled Nest Commander jobs. Reconcile files, expire points, send SAP/SFTP, notify offers, and publish Kafka commands into the loyalty bus — there is no HTTP API.",
+      "audience": "Operators and batch schedules — CLI jobs, not channels",
+      "localPath": "../nlp-cronjob",
+      "branch": "origin/sit",
+      "github": "https://github.com/corp-ais/nlp-cronjob",
+      "apiPrefix": "",
+      "topicEnumFiles": [
+        "src/infrastructure/eventServiceBus/enums/event.producer.enum.ts"
+      ],
+      "domainRoots": [
+        "src/jobs"
+      ]
+    },
+    {
       "id": "tmf658",
       "name": "esb-dos-TMF658-loyalty-management-nlp",
       "title": "TMF658 Loyalty Domain Service",

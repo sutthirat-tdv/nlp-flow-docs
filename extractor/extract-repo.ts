@@ -205,6 +205,7 @@ function domainFromPath(repo: RepoConfig, file: string): string {
 		if (group === 'externalServices' && parts[3]) return `externalServices/${parts[3]}`;
 		return group;
 	}
+	if (parts[1] === 'jobs' && parts[2]) return parts[2];
 	if (parts[1] === 'infrastructure' && parts[2]) return `infrastructure/${parts[2]}`;
 	return parts[1] ?? 'root';
 }
@@ -898,6 +899,108 @@ export function extractRepo(
 				});
 				for (const t of invokedUseCases) useCaseByClass.get(t)?.invokedBy.push(id);
 			}
+		}
+	}
+
+	// ------------------------------------------------------------- cron commands
+	const commandFiles = files.filter(
+		f => /\.command\.ts$/.test(f) && !/\.spec\.ts$/.test(f) && !/\/_developer\//.test(f),
+	);
+	for (const rel of commandFiles) {
+		const file = parse(rel);
+		for (const cls of exportedClasses(file)) {
+			const commandDeco = findDecorator(cls, file, 'Command');
+			if (!commandDeco) continue;
+			const arg = commandDeco.args.join(',');
+			const commandName =
+				/name:\s*['"`]([^'"`]+)['"`]/.exec(arg)?.[1] ??
+				/name:\s*([A-Za-z0-9_.]+)/.exec(arg)?.[1]?.split('.').pop() ??
+				cls.name!.text;
+			const description = /description:\s*['"`]([^'"`]+)['"`]/.exec(arg)?.[1] ?? null;
+			const processMethod =
+				methodsOf(cls).find(m => methodName(m, file) === 'process') ??
+				methodsOf(cls).find(m => methodName(m, file) === 'run');
+			if (!processMethod) continue;
+			const handler = methodName(processMethod, file);
+			const methodText = textOf(file, processMethod);
+			const ctorDeps = constructorParams(cls, file);
+			const invokedNames = [
+				...new Set(
+					thisCalls(methodText)
+						.map(c => ctorDeps.find(d => d.name === c.property)?.type)
+						.map(t => (t ? unwrapType(t) : null))
+						.filter((t): t is string => !!t),
+				),
+			];
+
+			for (const invoked of invokedNames) {
+				if (useCaseByClass.has(invoked)) continue;
+				if (/Logger|Metric|AppInsights|ConfigBatch|AxiosService/.test(invoked)) continue;
+				const entryClass = classIndex.get(invoked);
+				if (!entryClass || !/UseCase$|Service$|Manager$/.test(invoked)) continue;
+				const called = thisCalls(methodText).find(
+					c => unwrapType(ctorDeps.find(d => d.name === c.property)?.type ?? '') === invoked,
+				);
+				const managerReach = called
+					? reachOf(invoked, called.method, 0, new Set())
+					: {
+							topics: new Set(classTopics.get(invoked) ?? []),
+							systems: new Set(classSystems.get(invoked) ?? []),
+						};
+				const uc: UseCase = {
+					id: `${repo.id}:${invoked}`,
+					name: invoked.replace(/UseCase$|Service$|Manager$/, ''),
+					className: invoked,
+					repoId: repo.id,
+					domain: domainFromPath(repo, entryClass.file),
+					title: toTitle(called?.method ?? invoked.replace(/UseCase$|Service$|Manager$/, '')),
+					source: sourceRef(repo, prov, entryClass.file, entryClass.line),
+					loc: 0,
+					entryMethod: called?.method ?? 'execute',
+					inputType: null,
+					outputType: null,
+					inputSchemaId: null,
+					outputSchemaId: null,
+					dependencies: entryClass.deps.map(dependencyOf),
+					producesTopics: [...managerReach.topics].sort(),
+					systems: [...managerReach.systems].sort(),
+					invokedBy: [],
+					calls: entryClass.deps
+						.map(d => unwrapType(d.type))
+						.filter(d => /Manager$|Service$|UseCase$/.test(d)),
+					collectionAccess: [],
+					httpAccess: [],
+					errors: [],
+					tags: ['job'],
+				};
+				useCases.push(uc);
+				useCaseByClass.set(invoked, uc);
+			}
+
+			const resolvedUseCaseIds = invokedNames
+				.filter(t => useCaseByClass.has(t))
+				.map(t => `${repo.id}:${t}`);
+			const id = `${repo.id}:CRON /jobs/${commandName}#${handler}`;
+			endpoints.push({
+				id,
+				repoId: repo.id,
+				domain: domainFromPath(repo, rel),
+				method: 'CRON',
+				path: `/jobs/${commandName}`,
+				controller: cls.name!.text,
+				handler,
+				summary: description ?? leadingComment(file, cls) ?? null,
+				tags: ['cron'],
+				permissions: [],
+				guards: [],
+				auth: false,
+				requestSchemas: [],
+				responseSchemas: [],
+				useCaseIds: resolvedUseCaseIds,
+				source: sourceRef(repo, prov, rel, lineOf(file, processMethod)),
+				deprecated: false,
+			});
+			for (const t of invokedNames) useCaseByClass.get(t)?.invokedBy.push(id);
 		}
 	}
 
