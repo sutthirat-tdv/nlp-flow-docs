@@ -141,12 +141,10 @@ function main(): void {
       ensureTopic(name).producedBy.push(uc.id);
   }
 
-  // Drop enum entries that no code in these repos actually touches - they are
-  // usually copies of another service's topic list and only add noise.
+  // Drop names that nothing in these four repos publishes or consumes —
+  // leftover enum copies and DTO-shaped strings, not real bus topics.
   const topics = [...topicMap.values()]
-    .filter(
-      (t) => t.consumedBy.length || t.producedBy.length || t.aliases.length,
-    )
+    .filter((t) => t.consumedBy.length || t.producedBy.length)
     .sort((a, b) => a.name.localeCompare(b.name));
 
   // --------------------------------------------------------- schema usage
