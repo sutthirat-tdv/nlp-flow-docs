@@ -123,7 +123,7 @@ export function UseCasesPage() {
 				</span>
 			</div>
 
-			<div className="table-wrap">
+			<div className="table-wrap table-wrap--freeze">
 				<table>
 					<thead>
 						<tr>
@@ -156,7 +156,6 @@ export function UseCasesPage() {
 									<div className="badges">
 										{useCase.systems
 											.filter(s => s !== 'kafka')
-											.slice(0, 3)
 											.map(s => (
 												<Badge key={s}>{s}</Badge>
 											))}
@@ -322,7 +321,7 @@ export function UseCaseDetailPage() {
 						could not resolve, called from another use case, or dead code worth checking.
 					</Empty>
 				) : (
-					<div className="table-wrap">
+					<div className="table-wrap table-wrap--freeze">
 						<table>
 							<thead>
 								<tr>
@@ -390,7 +389,7 @@ export function UseCaseDetailPage() {
 				{useCase.producesTopics.length === 0 ? (
 					<Empty>It publishes nothing. All of its work is synchronous.</Empty>
 				) : (
-					<div className="table-wrap">
+					<div className="table-wrap table-wrap--freeze">
 						<table>
 							<thead>
 								<tr>
@@ -451,7 +450,7 @@ export function UseCaseDetailPage() {
 				{useCase.dependencies.length === 0 ? (
 					<Empty>No dependencies — pure logic.</Empty>
 				) : (
-					<div className="table-wrap">
+					<div className="table-wrap table-wrap--freeze">
 						<table>
 							<thead>
 								<tr>

@@ -430,14 +430,51 @@ pre {
 .table-wrap {
   border: 1px solid var(--border-soft);
   border-radius: var(--radius);
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
   background: var(--bg-raised);
+  -webkit-overflow-scrolling: touch;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13.5px;
+}
+
+.table-wrap--freeze table {
+  width: max-content;
+  min-width: 100%;
+}
+
+.table-wrap--freeze th,
+.table-wrap--freeze td {
+  white-space: nowrap;
+}
+
+.table-wrap--freeze td:first-child {
+  white-space: normal;
+  min-width: 220px;
+  max-width: 280px;
+}
+
+.table-wrap--freeze th:first-child,
+.table-wrap--freeze td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--bg-raised);
+  box-shadow: 1px 0 0 var(--border-soft);
+}
+
+.table-wrap--freeze th:first-child {
+  z-index: 3;
+  background: #0d1426;
+}
+
+.table-wrap--freeze tbody tr:hover td:first-child {
+  background: #15203a;
 }
 
 th {
