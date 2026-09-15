@@ -16,18 +16,18 @@ Location of the site: `nlp-flow-docs/` next to the four service checkouts in `co
 
 A website a new joiner (or anyone) can use to **look up any use case, flow, and data schema** across:
 
-| Config id | Repository | Role |
-|-----------|------------|------|
-| `openapi-bff` | `nlp-openapi-bff` | Layer 1 HTTP entry (Legacy API + OpenAPI Warranty) |
-| `backoffice-bff` | `nlp-backoffice-bff` | Layer 1 HTTP entry (Back Office console) |
-| `agg-common` | `esb-loyalty-management-agg-common` | Layer 2 Kafka aggregator |
-| `tmf658` | `esb-dos-TMF658-loyalty-management-nlp` | Layer 3 TMF658 domain / system of record |
+| Config id        | Repository                              | Role                                               |
+| ---------------- | --------------------------------------- | -------------------------------------------------- |
+| `openapi-bff`    | `nlp-openapi-bff`                       | Layer 1 HTTP entry (Legacy API + OpenAPI Warranty) |
+| `backoffice-bff` | `nlp-backoffice-bff`                    | Layer 1 HTTP entry (Back Office console)           |
+| `agg-common`     | `esb-loyalty-management-agg-common`     | Layer 2 Kafka aggregator                           |
+| `tmf658`         | `esb-dos-TMF658-loyalty-management-nlp` | Layer 3 TMF658 domain / system of record           |
 
 Requirements that must remain true:
 
 1. **End-to-end.** A reader can follow a request from the HTTP (or Kafka) entry, through use cases, across Kafka topics into other services, down to Mongo/D03/SAP/etc.
 2. **Lookup.** Search (⌘K) and browse: flows, endpoints, topics, use cases, schemas, downstream systems, versions.
-3. **Onboarding.** A short mental-model page (`/guide`) explains that *every cross-service call is Kafka*, request/reply + Failed topics, and which repo owns what.
+3. **Onboarding.** A short mental-model page (`/guide`) explains that _every cross-service call is Kafka_, request/reply + Failed topics, and which repo owns what.
 4. **Regenerable.** Re-run against the latest `origin/sit` (or a release tag / commit) without rewriting pages by hand.
 5. **Provenance.** Every page must show which branch, commit, and nearest tag the extraction came from, with GitHub deep links to the exact line.
 
@@ -48,16 +48,16 @@ All four are NestJS + TypeScript. Working trees in this workspace are often **no
 
 ### Shared conventions the extractor depends on
 
-| Artifact | Convention |
-|----------|------------|
-| Use case file | `*.use-case.ts`, class `*UseCase`, entry method `execute()` |
-| HTTP controller | `@Controller` + `@Get`/`@Post`/…, Swagger `@ApiProperty` on DTOs |
-| Kafka consumer | `@EntryPoint(topic)` from `@corp-ais/eqxjs-stub` (sometimes `@EventPattern`) |
-| Kafka produce | `EventProducerService.request` / `.publisher` / `.produce` with a topic enum |
-| Topic strings | Enum string values like `'nlp.pty.redeemPrivilege'` |
-| Topic family | command / past-tense event / `…Failed` |
-| Validation | `class-validator` on DTO properties |
-| Path aliases | `~*` → `src/*`; agg-common uses `~loyalty/*` → `src/loyaltyManagement/*` |
+| Artifact        | Convention                                                                   |
+| --------------- | ---------------------------------------------------------------------------- |
+| Use case file   | `*.use-case.ts`, class `*UseCase`, entry method `execute()`                  |
+| HTTP controller | `@Controller` + `@Get`/`@Post`/…, Swagger `@ApiProperty` on DTOs             |
+| Kafka consumer  | `@EntryPoint(topic)` from `@corp-ais/eqxjs-stub` (sometimes `@EventPattern`) |
+| Kafka produce   | `EventProducerService.request` / `.publisher` / `.produce` with a topic enum |
+| Topic strings   | Enum string values like `'nlp.pty.redeemPrivilege'`                          |
+| Topic family    | command / past-tense event / `…Failed`                                       |
+| Validation      | `class-validator` on DTO properties                                          |
+| Path aliases    | `~*` → `src/*`; agg-common uses `~loyalty/*` → `src/loyaltyManagement/*`     |
 
 ### Per-repo layout (origin/sit)
 
@@ -95,14 +95,14 @@ Vite + React          src/  (hash router, loads shards on demand)
 
 ### Commands
 
-| Script | What it does |
-|--------|----------------|
-| `npm run generate` | fetch + snapshot + extract |
+| Script                     | What it does                                |
+| -------------------------- | ------------------------------------------- |
+| `npm run generate`         | fetch + snapshot + extract                  |
 | `npm run generate:offline` | snapshot current local refs, no `git fetch` |
-| `npm run extract` | extract from existing snapshots |
-| `npm run dev` | Vite on port 4173 |
-| `npm run build` | static site → `dist/` |
-| `npm run update` | generate + build |
+| `npm run extract`          | extract from existing snapshots             |
+| `npm run dev`              | Vite on port 4173                           |
+| `npm run build`            | static site → `dist/`                       |
+| `npm run update`           | generate + build                            |
 
 tsx was abandoned: the sandbox cannot create its IPC socket. Compile the extractor with `tsc -p tsconfig.extractor.json` and run `node dist-extractor/*.js`.
 
@@ -118,12 +118,12 @@ Then `npm run update`. The site's Releases page already lists recent tags per re
 
 ### Output shards (do not go back to one 30 MB file)
 
-| File | Loaded when |
-|------|-------------|
-| `public/data/core.json` | First paint — lists, search, summaries (~7 MB) |
-| `public/data/schemas.<repoId>.json` | Opening a schema |
-| `public/data/flows.<repoId>.json` | Opening a flow (steps + mermaid) |
-| `public/data/manifest.json` | Provenance for the next sync |
+| File                                | Loaded when                                    |
+| ----------------------------------- | ---------------------------------------------- |
+| `public/data/core.json`             | First paint — lists, search, summaries (~7 MB) |
+| `public/data/schemas.<repoId>.json` | Opening a schema                               |
+| `public/data/flows.<repoId>.json`   | Opening a flow (steps + mermaid)               |
+| `public/data/manifest.json`         | Provenance for the next sync                   |
 
 ---
 
@@ -155,18 +155,18 @@ Then `npm run update`. The site's Releases page already lists recent tags per re
 
 Hash router (`HashRouter`) so `dist/` works from any static path.
 
-| Route | Page |
-|-------|------|
-| `/` | Overview: stats, architecture mermaid, four services, sample entry flows |
-| `/guide` | **Hand-written** new-joiner mental model (the only prose that is not generated) |
-| `/services`, `/services/:repoId` | Layer list, who-talks-to-whom matrix, domains, env vars, version |
-| `/flows`, `/flows/:flowId` | Filterable catalog; mermaid + indented step list + use cases on the path |
-| `/endpoints`, `/endpoints/:id` | HTTP catalog; request/response fields; link to flow |
-| `/topics`, `/topics/:name` | Kafka catalog; publishers, consumers, payload schema, family |
-| `/use-cases`, `/use-cases/:id` | Business logic catalog; triggers, I/O schemas, publishes, deps, thrown errors |
-| `/schemas`, `/schemas/:id` | DTO/entity/enum browser; nested expand; used-by |
-| `/systems` | Downstream blast radius |
-| `/releases` | Commit/tag provenance + how to regenerate |
+| Route                            | Page                                                                                  |
+| -------------------------------- | ------------------------------------------------------------------------------------- |
+| `/`                              | Overview: stats, architecture **sequence** diagram, four services, sample entry flows |
+| `/guide`                         | **Hand-written** new-joiner mental model (the only prose that is not generated)       |
+| `/services`, `/services/:repoId` | Layer list, who-talks-to-whom matrix, domains, env vars, version                      |
+| `/flows`, `/flows/:flowId`       | Filterable catalog; **mermaid sequence** (time order) + indented step list            |
+| `/endpoints`, `/endpoints/:id`   | HTTP catalog; request/response fields; link to flow                                   |
+| `/topics`, `/topics/:name`       | Kafka catalog; publishers, consumers, payload schema, family                          |
+| `/use-cases`, `/use-cases/:id`   | Business logic catalog; triggers, I/O schemas, publishes, deps, thrown errors         |
+| `/schemas`, `/schemas/:id`       | DTO/entity/enum browser; nested expand; used-by                                       |
+| `/systems`                       | Downstream blast radius                                                               |
+| `/releases`                      | Commit/tag provenance + how to regenerate                                             |
 
 Search: MiniSearch built in-browser from `core.json` on first ⌘K. Tokenize camelCase and dotted topic names.
 
@@ -205,7 +205,7 @@ A change is done when:
 1. `npx tsc -p tsconfig.extractor.json` and `npx tsc -p tsconfig.json --noEmit` are clean.
 2. `npm run generate:offline && npm run build` succeeds.
 3. `npm run dev` does not fail on missing page modules.
-4. A known flow still traces across services (sanity: `POST /legacy-api/v1/campaigns/check` → `nlp.pty.checkPrivilege` → tmf658 `CheckPrivilegeUseCase`; `nlp.pty.registerLoyaltyMember` → agg-common manager → `nlp.pty.onboardLoyaltyMember` → tmf658).
+4. A known flow still traces across services (sanity: `POST /legacy-api/v1/campaigns/check` → `nlp.pty.checkPrivilege` → tmf658 `CheckPrivilegeUseCase`; `nlp.pty.registerLoyaltyMember` → agg-common manager → `nlp.pty.onboardLoyaltyMember` → tmf658). Flow pages render a mermaid **sequenceDiagram**, not a flowchart.
 5. `/guide` and `/releases` still explain how to regenerate from `origin/sit` or a tag.
 
 ---
