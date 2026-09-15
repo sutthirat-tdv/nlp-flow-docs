@@ -1,0 +1,1 @@
+Generated JSON from `npm run generate` is gitignored (tens of MB). This file keeps the folder in the tree so the site has a place to write into after clone.

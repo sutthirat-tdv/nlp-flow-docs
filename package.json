@@ -1,0 +1,36 @@
+{
+  "name": "nlp-flow-docs",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Auto-generated E2E flow, use-case and data-schema documentation site for the NLP loyalty platform.",
+  "scripts": {
+    "build:extractor": "tsc -p tsconfig.extractor.json",
+    "sync": "npm run build:extractor && node dist-extractor/sync.js",
+    "extract": "npm run build:extractor && node dist-extractor/index.js",
+    "generate": "npm run build:extractor && node dist-extractor/sync.js && node dist-extractor/index.js",
+    "generate:offline": "npm run build:extractor && node dist-extractor/sync.js --no-fetch && node dist-extractor/index.js",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 4174",
+    "update": "npm run generate && npm run build",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.extractor.json --noEmit"
+  },
+  "dependencies": {
+    "mermaid": "^10.9.1",
+    "minisearch": "^6.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "tsx": "^4.19.1",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.8",
+    "yaml": "^2.5.1"
+  }
+}

@@ -1,0 +1,146 @@
+{
+  "$comment": "Single source of truth for which repositories are documented and how they are read. Edit this file to add a repo, change the branch, or re-point a local checkout. Everything else is derived automatically.",
+  "defaultBranch": "origin/sit",
+  "cacheDir": ".cache/snapshots",
+  "outDir": "public/data",
+  "repos": [
+    {
+      "id": "openapi-bff",
+      "name": "nlp-openapi-bff",
+      "title": "OpenAPI BFF",
+      "role": "entrypoint",
+      "layer": 1,
+      "summary": "Public / partner facing HTTP entrypoint. Serves the Legacy API and OpenAPI Warranty surfaces used by MyAIS, USSD, partners and BBL, converts every request into Kafka commands on the loyalty bus, and consumes CDC topics to keep its read models warm.",
+      "audience": "External channels, partners, MyAIS app",
+      "localPath": "../nlp-openapi-bff",
+      "branch": "origin/sit",
+      "github": "https://github.com/corp-ais/nlp-openapi-bff",
+      "apiPrefix": "api",
+      "apiPrefixExcludes": [
+        "healthcheck",
+        "iam-user",
+        "legacy-api",
+        "customers/points",
+        "otp",
+        "merchants",
+        "point",
+        "AISPoints",
+        "bbl"
+      ],
+      "topicEnumFiles": [
+        "src/infrastructure/eventServiceBus/enums/event.producer.enum.ts",
+        "src/infrastructure/eventServiceBus/enums/event.consume.enum.ts",
+        "src/infrastructure/eventServiceBus/enums/segmentation.topic.enum.ts",
+        "src/infrastructure/d03/enums/consumer-event.enum.ts",
+        "src/infrastructure/d03/enums/producer-event.enum.ts",
+        "src/enums/mission.topic.enum.ts",
+        "src/enums/event.producer.enum.ts"
+      ],
+      "domainRoots": [
+        "src/controllers",
+        "src/consumers",
+        "src/domains"
+      ]
+    },
+    {
+      "id": "backoffice-bff",
+      "name": "nlp-backoffice-bff",
+      "title": "Back Office BFF",
+      "role": "entrypoint",
+      "layer": 1,
+      "summary": "Internal HTTP entrypoint for the Back Office web console. Everything a campaign / partner / point administrator does lands here first. Permission guarded per endpoint, owns the Back Office MongoDB, and issues Kafka commands to the loyalty domain.",
+      "audience": "Back office operators, campaign & partner admins",
+      "localPath": "../nlp-backoffice-bff",
+      "branch": "origin/sit",
+      "github": "https://github.com/corp-ais/nlp-backoffice-bff",
+      "apiPrefix": "api",
+      "topicEnumFiles": [
+        "src/infrastructure/eventServiceBus/enums/event.producer.enum.ts",
+        "src/infrastructure/eventServiceBus/enums/event.consume.enum.ts",
+        "src/enums/cdc.enum.ts"
+      ],
+      "domainRoots": [
+        "src/domains"
+      ]
+    },
+    {
+      "id": "agg-common",
+      "name": "esb-loyalty-management-agg-common",
+      "title": "Loyalty Aggregator (agg-common)",
+      "role": "aggregator",
+      "layer": 2,
+      "summary": "Kafka-only aggregation layer. It owns the coarse grained business entry topics (register a loyalty member, adjust a balance), enriches them with D03 reads, then fans the work out to the TMF658 domain service over Kafka request/reply and publishes the final success or failure event.",
+      "audience": "Internal - no HTTP surface besides /health",
+      "localPath": "../esb-loyalty-management-agg-common",
+      "branch": "origin/sit",
+      "github": "https://github.com/corp-ais/esb-loyalty-management-agg-common",
+      "apiPrefix": "",
+      "topicEnumFiles": [
+        "src/loyaltyManagement/enums/producer-event.enum.ts"
+      ],
+      "domainRoots": [
+        "src/loyaltyManagement"
+      ]
+    },
+    {
+      "id": "tmf658",
+      "name": "esb-dos-TMF658-loyalty-management-nlp",
+      "title": "TMF658 Loyalty Domain Service",
+      "role": "domain",
+      "layer": 3,
+      "summary": "The system of record. A Kafka-only TMF658 domain service that owns the loyalty MongoDB (members, accounts, balances, transactions, programs, vouchers) and implements the real business rules: earn, burn, redeem, transfer, expire, tiering and reporting.",
+      "audience": "Internal - no HTTP surface besides /health",
+      "localPath": "../esb-dos-TMF658-loyalty-management-nlp",
+      "branch": "origin/sit",
+      "github": "https://github.com/corp-ais/esb-dos-TMF658-loyalty-management-nlp",
+      "apiPrefix": "",
+      "topicEnumFiles": [
+        "src/enums/consume.events.enum.ts",
+        "src/enums/produce.events.enum.ts"
+      ],
+      "domainRoots": [
+        "src/loyaltyManagement"
+      ]
+    }
+  ],
+  "downstreamSystems": {
+    "d03": {
+      "title": "D03 TMF APIs",
+      "kind": "http",
+      "description": "AIS shared TMF Open API estate (customer, party, product inventory, resource catalog, loyalty account/currency). Read mostly."
+    },
+    "d64": {
+      "title": "D64 / LID analytics",
+      "kind": "http",
+      "description": "Analytics + reporting data store used for point transaction reports and large read models."
+    },
+    "mongo": {
+      "title": "MongoDB",
+      "kind": "database",
+      "description": "Per service document store. Back Office BFF owns its own DB, the TMF658 domain service owns the loyalty DB."
+    },
+    "redis": {
+      "title": "Redis",
+      "kind": "cache",
+      "description": "Cache and pub/sub fan-out for hot lookups and cross instance invalidation."
+    },
+    "kafka": {
+      "title": "Kafka (Event Service Bus)",
+      "kind": "bus",
+      "description": "The backbone. Every cross service call in this platform is a Kafka message, usually request/reply with a correlation id."
+    },
+    "sap": { "title": "SAP", "kind": "http", "description": "Budget / WBS availability checks for campaign funding." },
+    "pns": { "title": "PNS", "kind": "http", "description": "Push notification service." },
+    "ikm": { "title": "IKM", "kind": "http", "description": "Content management for campaign and offer content." },
+    "mfaf": { "title": "MFAF", "kind": "bus", "description": "Notification / SMS fan-out platform reached over Kafka." },
+    "gsso": { "title": "GSSO", "kind": "http", "description": "Single sign on / identity." },
+    "prc": { "title": "PRC", "kind": "http", "description": "Pricing / rating fallback service." },
+    "thanos": { "title": "Thanos", "kind": "http", "description": "Subscriber profile and entitlement lookups." },
+    "camara": { "title": "CAMARA", "kind": "http", "description": "GSMA CAMARA OAuth / number verification APIs." },
+    "atn": { "title": "ATN", "kind": "http", "description": "Airtime / top-up network integration." },
+    "ctm": { "title": "CTM", "kind": "http", "description": "Customer transaction management integration." },
+    "mpay": { "title": "mPAY", "kind": "http", "description": "Payment gateway integration." },
+    "storage": { "title": "Object storage", "kind": "storage", "description": "MinIO / S3 compatible bucket for uploads, templates and exports." },
+    "openapi-master-data": { "title": "Master data API", "kind": "http", "description": "Shared master data (error event message templates, code lists)." }
+  }
+}

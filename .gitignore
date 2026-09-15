@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Extractor compile output
+dist-extractor/
+
+# Vite production build
+dist/
+
+# Snapshots of the four service repos (git archive of origin/sit)
+.cache/
+
+# Generated catalog — regenerate with `npm run generate` / `npm run generate:offline`
+public/data/*.json
+
+# Logs and OS
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Editor / tooling
+.idea/
+.vscode/
+*.tsbuildinfo
+
+# Env (none committed; example lives in the four service repos)
+.env
+.env.*
+!.env.example
