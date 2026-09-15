@@ -26,6 +26,8 @@ interface Indexes {
   topicByName: Map<string, CoreData["topics"][number]>;
   repoById: Map<string, CoreData["repos"][number]>;
   systemById: Map<string, CoreData["systems"][number]>;
+  collectionById: Map<string, CoreData["collections"][number]>;
+  collectionsBySchemaId: Map<string, CoreData["collections"][number][]>;
   schemaSummaryById: Map<string, CoreData["schemaIndex"][number]>;
   flowSummaryById: Map<string, CoreData["flowIndex"][number]>;
   /** Endpoint id / consumer id -> flow that starts there. */
@@ -66,6 +68,14 @@ function buildIndexes(core: CoreData): Indexes {
   const flowByEntry = new Map<string, CoreData["flowIndex"][number]>();
   for (const flow of core.flowIndex) flowByEntry.set(flow.entry.id, flow);
 
+  const collectionsBySchemaId = new Map<string, CoreData["collections"][number][]>();
+  for (const collection of core.collections ?? []) {
+    if (!collection.entitySchemaId) continue;
+    const list = collectionsBySchemaId.get(collection.entitySchemaId) ?? [];
+    list.push(collection);
+    collectionsBySchemaId.set(collection.entitySchemaId, list);
+  }
+
   return {
     useCaseById: new Map(core.useCases.map((u) => [u.id, u])),
     endpointById: new Map(core.endpoints.map((e) => [e.id, e])),
@@ -73,6 +83,8 @@ function buildIndexes(core: CoreData): Indexes {
     topicByName: new Map(core.topics.map((t) => [t.name, t])),
     repoById: new Map(core.repos.map((r) => [r.id, r])),
     systemById: new Map(core.systems.map((s) => [s.id, s])),
+    collectionById: new Map((core.collections ?? []).map((c) => [c.id, c])),
+    collectionsBySchemaId,
     schemaSummaryById: new Map(core.schemaIndex.map((s) => [s.id, s])),
     flowSummaryById: new Map(core.flowIndex.map((f) => [f.id, f])),
     flowByEntry,
@@ -99,8 +111,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
         );
         setCore({
           ...raw,
+          collections: raw.collections ?? [],
+          useCases: raw.useCases.map((u) => ({
+            ...u,
+            collectionAccess: u.collectionAccess ?? [],
+          })),
           topics,
-          stats: { ...raw.stats, topics: topics.length },
+          stats: {
+            ...raw.stats,
+            topics: topics.length,
+            collections: (raw.collections ?? []).length,
+          },
         });
       })
       .catch((e: Error) => setError(e.message));

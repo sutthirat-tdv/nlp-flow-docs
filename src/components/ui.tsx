@@ -149,6 +149,17 @@ export function SchemaLink({ id }: { id: string | null | undefined }) {
 	);
 }
 
+export function CollectionLink({ id }: { id: string }) {
+	const { indexes } = useData();
+	const collection = indexes.collectionById.get(id);
+	if (!collection) return <span className="mono dimmer">{id.split(':').slice(1).join(':') || id}</span>;
+	return (
+		<Link className="mono" to={`/database/${encodeURIComponent(id)}`}>
+			{collection.name}
+		</Link>
+	);
+}
+
 export function SystemLink({ id }: { id: string }) {
 	const { indexes } = useData();
 	const system = indexes.systemById.get(id);

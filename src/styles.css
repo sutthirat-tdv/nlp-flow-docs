@@ -107,6 +107,8 @@ pre {
   border-right: 1px solid var(--border-soft);
   padding: 18px 14px 40px;
   overflow-y: auto;
+  position: relative;
+  z-index: 5;
 }
 
 .sidebar__brand {

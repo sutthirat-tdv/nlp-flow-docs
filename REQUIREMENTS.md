@@ -26,7 +26,7 @@ A website a new joiner (or anyone) can use to **look up any use case, flow, and 
 Requirements that must remain true:
 
 1. **End-to-end.** A reader can follow a request from the HTTP (or Kafka) entry, through use cases, across Kafka topics into other services, down to Mongo/D03/SAP/etc.
-2. **Lookup.** Search (⌘K) and browse: flows, endpoints, topics, use cases, schemas, downstream systems, versions.
+3. **Onboarding.** A short mental-model page (`/guide`) explains that _every cross-service call is Kafka_, request/reply + Failed topics, and which repo owns what.
 3. **Onboarding.** A short mental-model page (`/guide`) explains that _every cross-service call is Kafka_, request/reply + Failed topics, and which repo owns what.
 4. **Regenerable.** Re-run against the latest `origin/sit` (or a release tag / commit) without rewriting pages by hand.
 5. **Provenance.** Every page must show which branch, commit, and nearest tag the extraction came from, with GitHub deep links to the exact line.
@@ -141,6 +141,8 @@ Then `npm run update`. The site's Releases page already lists recent tags per re
 
 6. `extractor/model.ts` is shared with the website. Keep it free of Node/DOM imports.
 
+7. **Mongo collections** come from `*MongoRepository` (`db.collection(...)` / `collectionName`), not Mongoose. Attribute create vs query from the use-case (or manager) entry method call graph, same as topics — not a class-level union of every repository method.
+
 ### Known remaining accuracy issues
 
 - `ApplyLoyaltyEvent` in tmf658 has several handlers on the same topic; the walk fans out to all of them (registration rule, mission earn, generic apply). That is structurally true but noisy on some diagrams.
@@ -163,8 +165,9 @@ Hash router (`HashRouter`) so `dist/` works from any static path.
 | `/flows`, `/flows/:flowId`       | Filterable catalog; **mermaid sequence** (time order) + indented step list            |
 | `/endpoints`, `/endpoints/:id`   | HTTP catalog; request/response fields; link to flow                                   |
 | `/topics`, `/topics/:name`       | Kafka catalog; publishers, consumers, payload schema, family                          |
-| `/use-cases`, `/use-cases/:id`   | Business logic catalog; triggers, I/O schemas, publishes, deps, thrown errors         |
-| `/schemas`, `/schemas/:id`       | DTO/entity/enum browser; nested expand; used-by                                       |
+| `/use-cases`, `/use-cases/:id`   | Business logic catalog; triggers, I/O schemas, publishes, deps, **Mongo create vs query**, thrown errors |
+| `/schemas`, `/schemas/:id`       | DTO/entity/enum browser; nested expand; used-by; link to Mongo collection when it is a stored document |
+| `/database`, `/database/:id`     | Mongo collections as an **ERD** (crow's foot from field types / imported constants); create vs query methods; document fields |
 | `/systems`                       | Downstream blast radius                                                               |
 | `/releases`                      | Commit/tag provenance + how to regenerate                                             |
 
@@ -187,7 +190,8 @@ nlp-flow-docs/
     config.ts              load repos.config.json
     sync.ts                git archive snapshots + provenance
     ast.ts                 TS compiler API helpers (no typechecker)
-    extract-repo.ts        one snapshot → use cases, endpoints, consumers, schemas
+    extract-repo.ts        one snapshot → use cases, endpoints, consumers, schemas, collections
+    extract-collections.ts Mongo collection names, ops, links from *MongoRepository
     flows.ts               stitch E2E graphs + mermaid
     model.ts               shared types
     index.ts               orchestrate + write public/data

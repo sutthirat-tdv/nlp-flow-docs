@@ -3,6 +3,7 @@ import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom';
 
 import { SearchPalette } from './components/SearchPalette';
 import { useData } from './data';
+import { CollectionDetailPage, CollectionsPage } from './pages/Collections';
 import { EndpointDetailPage, EndpointsPage } from './pages/Endpoints';
 import { FlowDetailPage, FlowsPage } from './pages/Flows';
 import { GuidePage } from './pages/Guide';
@@ -56,6 +57,7 @@ function Sidebar({ onSearch }: { onSearch: () => void }) {
 			<div className="sidebar__group">
 				<div className="sidebar__label">Data</div>
 				{link('/schemas', 'Data schemas', core.stats.schemas)}
+				{link('/database', 'Mongo collections', core.stats.collections)}
 				{link('/systems', 'Downstream systems', core.systems.length)}
 			</div>
 
@@ -110,6 +112,8 @@ export function App() {
 						<Route path="/use-cases/:useCaseId" element={<UseCaseDetailPage />} />
 						<Route path="/schemas" element={<SchemasPage />} />
 						<Route path="/schemas/:schemaId" element={<SchemaDetailPage />} />
+						<Route path="/database" element={<CollectionsPage />} />
+						<Route path="/database/:collectionId" element={<CollectionDetailPage />} />
 						<Route path="/systems" element={<SystemsPage />} />
 						<Route path="/releases" element={<ReleasesPage />} />
 						<Route path="*" element={<NotFoundPage />} />

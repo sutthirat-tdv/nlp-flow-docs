@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 
 import {
 	Badge,
+	CollectionLink,
 	Collapsible,
 	Empty,
 	KeyValue,
@@ -179,13 +180,20 @@ export function UseCasesPage() {
 function DependencyRow({ dep }: { dep: Dependency }) {
 	const { indexes } = useData();
 	const target = dep.targetId ? indexes.useCaseById.get(dep.targetId) : undefined;
+	const collection = dep.targetId ? indexes.collectionById.get(dep.targetId) : undefined;
 	return (
 		<tr>
 			<td className="mono" style={{ fontSize: 12.5 }}>
 				{dep.name}
 			</td>
 			<td className="mono" style={{ fontSize: 12.5 }}>
-				{target ? <UseCaseLink id={target.id} /> : dep.type}
+				{collection ? (
+					<CollectionLink id={collection.id} />
+				) : target ? (
+					<UseCaseLink id={target.id} />
+				) : (
+					dep.type
+				)}
 			</td>
 			<td>
 				<Badge tone={DEP_TONE[dep.kind]}>{dep.kind.replace(/-/g, ' ')}</Badge>
@@ -432,6 +440,93 @@ export function UseCaseDetailPage() {
 															</Badge>
 														))}
 													</div>
+												)}
+											</td>
+										</tr>
+									);
+								})}
+							</tbody>
+						</table>
+					</div>
+				)}
+			</Section>
+
+			<Section
+				title="Mongo collections"
+				subtitle={
+					(useCase.collectionAccess ?? []).length
+						? `${useCase.collectionAccess.length} collection(s) reached from ${useCase.entryMethod}()`
+						: 'none reached from the entry method'
+				}
+			>
+				{(useCase.collectionAccess ?? []).length === 0 ? (
+					<Empty>
+						This use case does not call a Mongo repository from{' '}
+						<code>{useCase.entryMethod}()</code>. Loyalty writes live in TMF658; BFF collections are
+						local read models.
+					</Empty>
+				) : (
+					<div className="table-wrap table-wrap--freeze">
+						<table>
+							<thead>
+								<tr>
+									<th>Collection</th>
+									<th>Creates</th>
+									<th>Queries</th>
+									<th>Other</th>
+								</tr>
+							</thead>
+							<tbody>
+								{(useCase.collectionAccess ?? []).map(access => {
+									const creates = access.operations.filter(
+										o => o.kind === 'create' || o.kind === 'upsert',
+									);
+									const queries = access.operations.filter(o => o.kind === 'read');
+									const other = access.operations.filter(
+										o => o.kind !== 'create' && o.kind !== 'upsert' && o.kind !== 'read',
+									);
+									return (
+										<tr key={access.collectionId}>
+											<td>
+												<CollectionLink id={access.collectionId} />
+											</td>
+											<td>
+												{creates.length ? (
+													<div className="badges">
+														{creates.map(o => (
+															<Badge key={o.name} tone="green">
+																{o.name}()
+															</Badge>
+														))}
+													</div>
+												) : (
+													<span className="dimmer">—</span>
+												)}
+											</td>
+											<td>
+												{queries.length ? (
+													<div className="badges">
+														{queries.map(o => (
+															<Badge key={o.name} tone="accent">
+																{o.name}()
+															</Badge>
+														))}
+													</div>
+												) : (
+													<span className="dimmer">—</span>
+												)}
+											</td>
+											<td>
+												{other.length ? (
+													<div className="badges">
+														{other.map(o => (
+															<Badge key={o.name} tone={o.kind === 'delete' ? 'red' : 'amber'}>
+																{o.name}()
+															</Badge>
+														))}
+													</div>
+												) : (
+													<span className="dimmer">—</span>
 												)}
 											</td>
 										</tr>

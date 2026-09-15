@@ -53,6 +53,9 @@ async function getMermaid() {
             wrap: false,
             width: 110,
           },
+          er: {
+            useMaxWidth: true,
+          },
         });
         initialised = true;
       }

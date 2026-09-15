@@ -28,6 +28,7 @@ const KIND_LABEL: Record<string, string> = {
 	topic: 'Topic',
 	consumer: 'Consumer',
 	schema: 'Schema',
+	collection: 'Mongo',
 	service: 'Service',
 };
 
@@ -64,7 +65,7 @@ export function SearchPalette({ onClose }: { onClose: () => void }) {
 				title: u.title,
 				subtitle: `${u.className} · ${u.domain}`,
 				repoId: u.repoId,
-				body: [u.inputType, u.outputType, ...u.producesTopics, ...u.tags].filter(Boolean).join(' '),
+				body: [u.inputType, u.outputType, ...u.producesTopics, ...u.tags, ...(u.collectionAccess ?? []).map(a => a.collectionId)].filter(Boolean).join(' '),
 				route: `/use-cases/${encodeURIComponent(u.id)}`,
 			})),
 			...core.topics.map(t => ({
@@ -84,6 +85,15 @@ export function SearchPalette({ onClose }: { onClose: () => void }) {
 				repoId: s.repoId,
 				body: s.file,
 				route: `/schemas/${encodeURIComponent(s.id)}`,
+			})),
+			...(core.collections ?? []).map(c => ({
+				id: `collection|${c.id}`,
+				kind: 'collection',
+				title: c.name,
+				subtitle: `${c.entityName ?? c.repositoryClass} · ${c.usedByUseCaseIds.length} use case(s)`,
+				repoId: c.repoId,
+				body: [c.repositoryClass, c.connection, c.entityName, c.domain].filter(Boolean).join(' '),
+				route: `/database/${encodeURIComponent(c.id)}`,
 			})),
 			...core.repos.map(r => ({
 				id: `service|${r.id}`,
@@ -149,7 +159,7 @@ export function SearchPalette({ onClose }: { onClose: () => void }) {
 				<input
 					ref={inputRef}
 					className="palette__input"
-					placeholder="Search flows, endpoints, use cases, topics, schemas…"
+					placeholder="Search flows, endpoints, use cases, topics, schemas, collections…"
 					value={query}
 					onChange={e => setQuery(e.target.value)}
 					onKeyDown={e => {

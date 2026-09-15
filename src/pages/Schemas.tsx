@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 
 import {
 	Badge,
+	CollectionLink,
 	Collapsible,
 	Empty,
 	KeyValue,
@@ -252,6 +253,7 @@ export function SchemaDetailPage() {
 	const schema = useSchema(schemaId);
 	const summary = schemaId ? indexes.schemaSummaryById.get(schemaId) : undefined;
 	const siblings = useRepoSchemas(summary?.repoId ?? null);
+	const storedAs = schemaId ? indexes.collectionsBySchemaId.get(schemaId) ?? [] : [];
 
 	if (!summary) {
 		return (
@@ -306,6 +308,20 @@ export function SchemaDetailPage() {
 							),
 						],
 						['File', schema ? <SourceLink source={schema.source} /> : '—'],
+						[
+							'Mongo collection',
+							storedAs.length ? (
+								<div className="badges">
+									{storedAs.map(c => (
+										<Badge key={c.id} tone="green">
+											<CollectionLink id={c.id} />
+										</Badge>
+									))}
+								</div>
+							) : (
+								<span className="dimmer">not a stored document</span>
+							),
+						],
 					]}
 				/>
 			</div>
@@ -404,6 +420,8 @@ function UsageRow({ id }: { id: string }) {
 	const useCase = indexes.useCaseById.get(id);
 	const schema = indexes.schemaSummaryById.get(id);
 
+	const collection = indexes.collectionById.get(id);
+
 	if (endpoint) {
 		return (
 			<div style={{ padding: '3px 0' }}>
@@ -431,6 +449,13 @@ function UsageRow({ id }: { id: string }) {
 		return (
 			<div style={{ padding: '3px 0' }}>
 				<Badge tone="purple">Use case</Badge> <UseCaseLink id={useCase.id} />
+			</div>
+		);
+	}
+	if (collection) {
+		return (
+			<div style={{ padding: '3px 0' }}>
+				<Badge tone="green">Mongo</Badge> <CollectionLink id={collection.id} />
 			</div>
 		);
 	}

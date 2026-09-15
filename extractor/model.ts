@@ -115,9 +115,58 @@ export interface UseCase {
 	invokedBy: string[];
 	/** Other use cases / managers this one calls. */
 	calls: string[];
+	/** Mongo collections this use case (or a repository it calls) actually touches. */
+	collectionAccess: CollectionAccess[];
 	/** Notable business rules: thrown errors and guard conditions. */
 	errors: string[];
 	tags: string[];
+}
+
+export type CollectionOpKind = 'create' | 'read' | 'update' | 'delete' | 'upsert' | 'other';
+
+export interface CollectionOperation {
+	/** Repository method name, e.g. "create" or "findOneById". */
+	name: string;
+	kind: CollectionOpKind;
+	/** Native driver calls inside the method: insertOne, findOne, updateOne, … */
+	driverCalls: string[];
+	source: SourceRef;
+}
+
+export interface CollectionLink {
+	collectionId: string;
+	/** Field name, imported constant, entity type, or same collection name. */
+	via: string;
+	kind: 'field' | 'type' | 'import' | 'same-name';
+}
+
+export interface CollectionAccess {
+	collectionId: string;
+	operations: { name: string; kind: CollectionOpKind }[];
+}
+
+/**
+ * A MongoDB collection owned by one of the four services. Native driver
+ * (`db.collection(...)`), not Mongoose — collection names come from string
+ * constants or `collectionName` properties on `*MongoRepository` classes.
+ */
+export interface MongoCollection {
+	id: string;
+	repoId: string;
+	/** Literal Mongo collection name, e.g. "loyaltyProgramMember". */
+	name: string;
+	domain: string;
+	/** Nest `@Inject('…')` connection token, when present. */
+	connection: string | null;
+	repositoryClass: string;
+	repositoryFile: string;
+	entityName: string | null;
+	entitySchemaId: string | null;
+	operations: CollectionOperation[];
+	/** Use cases whose call graph hits this repository. */
+	usedByUseCaseIds: string[];
+	related: CollectionLink[];
+	source: SourceRef;
 }
 
 export interface Endpoint {
@@ -197,6 +246,7 @@ export interface RepoStats {
 	endpoints: number;
 	consumers: number;
 	schemas: number;
+	collections: number;
 	topicsProduced: number;
 	topicsConsumed: number;
 	domains: number;
@@ -244,6 +294,7 @@ export interface Catalog {
 	consumers: Consumer[];
 	topics: Topic[];
 	schemas: Schema[];
+	collections: MongoCollection[];
 	flows: Flow[];
 	systems: DownstreamSystem[];
 	stats: {
@@ -253,6 +304,7 @@ export interface Catalog {
 		consumers: number;
 		topics: number;
 		schemas: number;
+		collections: number;
 		flows: number;
 		crossServiceFlows: number;
 	};

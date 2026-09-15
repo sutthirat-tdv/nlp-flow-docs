@@ -43,10 +43,11 @@ export function HomePage() {
   return (
     <>
       <PageHead title="The NLP loyalty platform, end to end">
-        Every HTTP endpoint, Kafka topic, use case and data schema in the four
-        services below, read directly from the <code>sit</code> branch of each
-        repository. Start with the <Link to="/guide">new joiner guide</Link>, or
-        press <Badge>⌘K</Badge> and search for whatever you are chasing.
+        Every HTTP endpoint, Kafka topic, use case, data schema and Mongo
+        collection in the four services below, read directly from the{" "}
+        <code>sit</code> branch of each repository. Start with the{" "}
+        <Link to="/guide">new joiner guide</Link>, or press <Badge>⌘K</Badge>{" "}
+        and search for whatever you are chasing.
       </PageHead>
 
       <div className="grid grid--4">
@@ -74,6 +75,11 @@ export function HomePage() {
           value={core.stats.schemas.toLocaleString()}
           label="Data schemas"
           to="/schemas"
+        />
+        <Stat
+          value={(core.stats.collections ?? 0).toLocaleString()}
+          label="Mongo collections"
+          to="/database"
         />
         <Stat
           value={core.stats.crossServiceFlows.toLocaleString()}

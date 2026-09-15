@@ -37,12 +37,14 @@ import {
 	Dependency,
 	DependencyKind,
 	Endpoint,
+	MongoCollection,
 	Schema,
 	SchemaField,
 	SchemaLayer,
 	SourceRef,
 	UseCase,
 } from './model.js';
+import { attachCollectionUsage, extractMongoCollections } from './extract-collections.js';
 import { RepoProvenance } from './sync.js';
 
 const TOPIC_PATTERN = /^[a-z][A-Za-z0-9]*(?:\.[A-Za-z0-9_-]+){1,5}$/;
@@ -133,6 +135,7 @@ export interface RepoExtraction {
 	endpoints: Endpoint[];
 	consumers: Consumer[];
 	schemas: Schema[];
+	collections: MongoCollection[];
 	/** topic string -> alias metadata */
 	topicAliases: Map<string, { enumName: string; member: string; source: SourceRef }[]>;
 	classIndex: Map<string, ClassIndexEntry>;
@@ -662,6 +665,17 @@ export function extractRepo(
 		return null;
 	};
 
+	// ----------------------------------------------------------- collections
+	const collections = extractMongoCollections({
+		repo,
+		prov,
+		files,
+		parse,
+		schemaIdFor,
+		schemaFields: id => (id ? (schemaByName.get(id.split(':')[1] ?? '')?.fields ?? []) : []),
+		domainFromPath: file => domainFromPath(repo, file),
+	});
+
 	// ------------------------------------------------------------- use cases
 	const useCases: UseCase[] = [];
 	const useCaseByClass = new Map<string, UseCase>();
@@ -726,6 +740,7 @@ export function extractRepo(
 				systems: [...closure.systems].sort(),
 				invokedBy: [],
 				calls,
+				collectionAccess: [],
 				errors,
 				tags: [],
 			};
@@ -971,6 +986,7 @@ export function extractRepo(
 						calls: entryClass.deps
 							.map(d => unwrapType(d.type))
 							.filter(d => /Manager$|Service$/.test(d)),
+						collectionAccess: [],
 						errors: [],
 						tags: ['manager'],
 					};
@@ -1000,6 +1016,8 @@ export function extractRepo(
 			}
 		}
 	}
+
+	attachCollectionUsage(useCases, collections, classIndex);
 
 	// -------------------------------------------------------------- metadata
 	const envVars: { name: string; comment?: string }[] = [];
@@ -1033,6 +1051,7 @@ export function extractRepo(
 		endpoints,
 		consumers,
 		schemas,
+		collections,
 		topicAliases,
 		classIndex,
 		classTopics,

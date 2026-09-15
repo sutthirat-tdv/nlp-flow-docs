@@ -26,7 +26,7 @@ Edit `repos.config.json` — set that repo's `branch` to a tag (`"2.31.0"`) or a
 
 ## New joiners
 
-Open **New joiner guide** in the sidebar. The one idea: every cross-service call is a Kafka message; BFFs translate HTTP; the TMF658 service owns loyalty data.
+Open **New joiner guide** in the sidebar. The one idea: every cross-service call is a Kafka message; BFFs translate HTTP; the TMF658 service owns loyalty data. **Mongo collections** lists each collection as `db.collection()` creates it, which use cases insert vs query, and how documents link to other collections.
 
 ## What each command does
 

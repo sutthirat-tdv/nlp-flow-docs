@@ -40,6 +40,11 @@ export function SystemsPage() {
 						<p className="dim" style={{ marginTop: 0 }}>
 							{system.description}
 						</p>
+						{system.id === 'mongo' ? (
+							<p style={{ marginTop: 0 }}>
+								<Link to="/database">Browse every Mongo collection →</Link>
+							</p>
+						) : null}
 						<div className="badges" style={{ marginBottom: 12 }}>
 							{system.usedByRepos.map(repoId => (
 								<RepoBadge key={repoId} repoId={repoId} />

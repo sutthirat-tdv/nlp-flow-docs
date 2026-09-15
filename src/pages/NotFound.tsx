@@ -19,7 +19,7 @@ export function NotFoundPage() {
 						<Link to="/guide">New joiner guide</Link> — read this first if you are new
 					</li>
 					<li>
-						<Link to="/flows">End-to-end flows</Link> — trace a request or an event
+						<Link to="/database">Mongo collections</Link> — what is stored, who writes, who reads
 					</li>
 					<li>
 						Press <kbd>⌘K</kbd> and search by name

@@ -3,6 +3,10 @@
  * the extractor so the two halves can never drift apart.
  */
 export type {
+	CollectionAccess,
+	CollectionLink,
+	CollectionOpKind,
+	CollectionOperation,
 	Consumer,
 	Dependency,
 	DependencyKind,
@@ -10,6 +14,7 @@ export type {
 	Endpoint,
 	Flow,
 	FlowStep,
+	MongoCollection,
 	RepoDoc,
 	RepoStats,
 	Schema,
@@ -24,6 +29,7 @@ import type {
 	Consumer,
 	DownstreamSystem,
 	Endpoint,
+	MongoCollection,
 	RepoDoc,
 	Topic,
 	UseCase,
@@ -65,6 +71,7 @@ export interface CoreData {
 	consumers: Consumer[];
 	topics: Topic[];
 	systems: DownstreamSystem[];
+	collections: MongoCollection[];
 	stats: {
 		repos: number;
 		useCases: number;
@@ -72,6 +79,7 @@ export interface CoreData {
 		consumers: number;
 		topics: number;
 		schemas: number;
+		collections: number;
 		flows: number;
 		crossServiceFlows: number;
 	};

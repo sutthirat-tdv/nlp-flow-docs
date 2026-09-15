@@ -15,11 +15,13 @@ import {
   Consumer,
   DownstreamSystem,
   Endpoint,
+  MongoCollection,
   RepoDoc,
   Schema,
   Topic,
   UseCase,
 } from "./model.js";
+import { linkSameNameCollections } from "./extract-collections.js";
 import { Manifest } from "./sync.js";
 
 function readManifest(config: DocsConfig): Manifest {
@@ -98,7 +100,8 @@ function main(): void {
       topicFamilies.set(topic, family);
     console.log(
       `${extraction.useCases.length} use cases, ${extraction.endpoints.length} endpoints, ` +
-        `${extraction.consumers.length} consumers, ${extraction.schemas.length} schemas`,
+        `${extraction.consumers.length} consumers, ${extraction.schemas.length} schemas, ` +
+        `${extraction.collections.length} collections`,
     );
   }
 
@@ -106,6 +109,8 @@ function main(): void {
   const endpoints: Endpoint[] = extractions.flatMap((e) => e.endpoints);
   const consumers: Consumer[] = extractions.flatMap((e) => e.consumers);
   const schemas: Schema[] = extractions.flatMap((e) => e.schemas);
+  const collections: MongoCollection[] = extractions.flatMap((e) => e.collections);
+  linkSameNameCollections(collections);
 
   // ------------------------------------------------------------ topics
   const topicMap = new Map<string, Topic>();
@@ -163,6 +168,7 @@ function main(): void {
     addUsage(u.inputSchemaId, u.id);
     addUsage(u.outputSchemaId, u.id);
   }
+  for (const c of collections) addUsage(c.entitySchemaId, c.id);
   // Nested references: a schema field pointing at another schema in the same repo.
   for (const schema of schemas) {
     for (const field of schema.fields) {
@@ -233,6 +239,7 @@ function main(): void {
         endpoints: extraction.endpoints.length,
         consumers: extraction.consumers.length,
         schemas: extraction.schemas.length,
+        collections: extraction.collections.length,
         topicsProduced: new Set(
           extraction.useCases.flatMap((u) => u.producesTopics),
         ).size,
@@ -294,6 +301,7 @@ function main(): void {
     consumers: consumers.sort((a, b) => a.topic.localeCompare(b.topic)),
     topics,
     schemas: schemas.sort((a, b) => a.name.localeCompare(b.name)),
+    collections: collections.sort((a, b) => a.name.localeCompare(b.name)),
     flows,
     systems,
     stats: {
@@ -303,6 +311,7 @@ function main(): void {
       consumers: consumers.length,
       topics: topics.length,
       schemas: schemas.length,
+      collections: collections.length,
       flows: flows.length,
       crossServiceFlows: flows.filter((f) => f.crossService).length,
     },
@@ -324,6 +333,7 @@ function main(): void {
     consumers: catalog.consumers,
     topics: catalog.topics,
     systems: catalog.systems,
+    collections: catalog.collections,
     stats: catalog.stats,
     schemaIndex: schemas.map((s) => ({
       id: s.id,

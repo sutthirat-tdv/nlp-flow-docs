@@ -47,6 +47,9 @@ export function ServicesPage() {
 								<Badge>{repo.stats.useCases} use cases</Badge>
 								<Badge>{repo.stats.consumers} Kafka consumers</Badge>
 								<Badge>{repo.stats.schemas} schemas</Badge>
+								{repo.stats.collections ? (
+									<Badge tone="green">{repo.stats.collections} collections</Badge>
+								) : null}
 								{repo.packageVersion ? (
 									<Badge tone="purple">v{repo.packageVersion}</Badge>
 								) : null}
@@ -188,6 +191,11 @@ export function ServiceDetailPage() {
 				<Stat value={repo.stats.topicsProduced} label="Topics published" />
 				<Stat value={repo.stats.topicsConsumed} label="Topics consumed" />
 				<Stat value={repo.stats.schemas} label="Schemas" to={`/schemas?repo=${repo.id}`} />
+				<Stat
+					value={repo.stats.collections}
+					label="Mongo collections"
+					to={`/database?repo=${repo.id}`}
+				/>
 				<Stat value={repo.stats.domains} label="Domains" />
 				<Stat value={repo.stats.files} label="Source files" />
 			</div>
