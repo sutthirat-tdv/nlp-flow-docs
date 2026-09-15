@@ -1207,7 +1207,8 @@ tbody tr:hover {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background:
-    radial-gradient(circle at 1px 1px, var(--border-soft) 1px, transparent 0) 0 0 / 22px 22px,
+    radial-gradient(circle at 1px 1px, var(--border-soft) 1px, transparent 0) 0
+      0 / 22px 22px,
     var(--bg);
 }
 

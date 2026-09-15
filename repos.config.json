@@ -36,11 +36,7 @@
         "src/enums/mission.topic.enum.ts",
         "src/enums/event.producer.enum.ts"
       ],
-      "domainRoots": [
-        "src/controllers",
-        "src/consumers",
-        "src/domains"
-      ]
+      "domainRoots": ["src/controllers", "src/consumers", "src/domains"]
     },
     {
       "id": "backoffice-bff",
@@ -59,9 +55,7 @@
         "src/infrastructure/eventServiceBus/enums/event.consume.enum.ts",
         "src/enums/cdc.enum.ts"
       ],
-      "domainRoots": [
-        "src/domains"
-      ]
+      "domainRoots": ["src/domains"]
     },
     {
       "id": "agg-common",
@@ -75,12 +69,8 @@
       "branch": "origin/sit",
       "github": "https://github.com/corp-ais/esb-loyalty-management-agg-common",
       "apiPrefix": "",
-      "topicEnumFiles": [
-        "src/loyaltyManagement/enums/producer-event.enum.ts"
-      ],
-      "domainRoots": [
-        "src/loyaltyManagement"
-      ]
+      "topicEnumFiles": ["src/loyaltyManagement/enums/producer-event.enum.ts"],
+      "domainRoots": ["src/loyaltyManagement"]
     },
     {
       "id": "cronjob",
@@ -97,9 +87,7 @@
       "topicEnumFiles": [
         "src/infrastructure/eventServiceBus/enums/event.producer.enum.ts"
       ],
-      "domainRoots": [
-        "src/jobs"
-      ]
+      "domainRoots": ["src/jobs"]
     },
     {
       "id": "tmf658",
@@ -117,9 +105,7 @@
         "src/enums/consume.events.enum.ts",
         "src/enums/produce.events.enum.ts"
       ],
-      "domainRoots": [
-        "src/loyaltyManagement"
-      ]
+      "domainRoots": ["src/loyaltyManagement"]
     }
   ],
   "downstreamSystems": {
@@ -148,18 +134,70 @@
       "kind": "bus",
       "description": "The backbone. Every cross service call in this platform is a Kafka message, usually request/reply with a correlation id."
     },
-    "sap": { "title": "SAP", "kind": "http", "description": "Budget / WBS availability checks for campaign funding." },
-    "pns": { "title": "PNS", "kind": "http", "description": "Push notification service." },
-    "ikm": { "title": "IKM", "kind": "http", "description": "Content management for campaign and offer content." },
-    "mfaf": { "title": "MFAF", "kind": "bus", "description": "Notification / SMS fan-out platform reached over Kafka." },
-    "gsso": { "title": "GSSO", "kind": "http", "description": "Single sign on / identity." },
-    "prc": { "title": "PRC", "kind": "http", "description": "Pricing / rating fallback service." },
-    "thanos": { "title": "Thanos", "kind": "http", "description": "Subscriber profile and entitlement lookups." },
-    "camara": { "title": "CAMARA", "kind": "http", "description": "GSMA CAMARA OAuth / number verification APIs." },
-    "atn": { "title": "ATN", "kind": "http", "description": "Airtime / top-up network integration." },
-    "ctm": { "title": "CTM", "kind": "http", "description": "Customer transaction management integration." },
-    "mpay": { "title": "mPAY", "kind": "http", "description": "Payment gateway integration." },
-    "storage": { "title": "Object storage", "kind": "storage", "description": "MinIO / S3 compatible bucket for uploads, templates and exports." },
-    "openapi-master-data": { "title": "Master data API", "kind": "http", "description": "Shared master data (error event message templates, code lists)." }
+    "sap": {
+      "title": "SAP",
+      "kind": "http",
+      "description": "Budget / WBS availability checks for campaign funding."
+    },
+    "pns": {
+      "title": "PNS",
+      "kind": "http",
+      "description": "Push notification service."
+    },
+    "ikm": {
+      "title": "IKM",
+      "kind": "http",
+      "description": "Content management for campaign and offer content."
+    },
+    "mfaf": {
+      "title": "MFAF",
+      "kind": "bus",
+      "description": "Notification / SMS fan-out platform reached over Kafka."
+    },
+    "gsso": {
+      "title": "GSSO",
+      "kind": "http",
+      "description": "Single sign on / identity."
+    },
+    "prc": {
+      "title": "PRC",
+      "kind": "http",
+      "description": "Pricing / rating fallback service."
+    },
+    "thanos": {
+      "title": "Thanos",
+      "kind": "http",
+      "description": "Subscriber profile and entitlement lookups."
+    },
+    "camara": {
+      "title": "CAMARA",
+      "kind": "http",
+      "description": "GSMA CAMARA OAuth / number verification APIs."
+    },
+    "atn": {
+      "title": "ATN",
+      "kind": "http",
+      "description": "Airtime / top-up network integration."
+    },
+    "ctm": {
+      "title": "CTM",
+      "kind": "http",
+      "description": "Customer transaction management integration."
+    },
+    "mpay": {
+      "title": "mPAY",
+      "kind": "http",
+      "description": "Payment gateway integration."
+    },
+    "storage": {
+      "title": "Object storage",
+      "kind": "storage",
+      "description": "MinIO / S3 compatible bucket for uploads, templates and exports."
+    },
+    "openapi-master-data": {
+      "title": "Master data API",
+      "kind": "http",
+      "description": "Shared master data (error event message templates, code lists)."
+    }
   }
 }

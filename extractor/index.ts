@@ -111,7 +111,9 @@ function main(): void {
   const endpoints: Endpoint[] = extractions.flatMap((e) => e.endpoints);
   const consumers: Consumer[] = extractions.flatMap((e) => e.consumers);
   const schemas: Schema[] = extractions.flatMap((e) => e.schemas);
-  const collections: MongoCollection[] = extractions.flatMap((e) => e.collections);
+  const collections: MongoCollection[] = extractions.flatMap(
+    (e) => e.collections,
+  );
   linkSameNameCollections(collections);
   const httpClients: HttpClient[] = extractions.flatMap((e) => e.httpClients);
   linkSameClientHttp(httpClients);
@@ -308,7 +310,8 @@ function main(): void {
     schemas: schemas.sort((a, b) => a.name.localeCompare(b.name)),
     collections: collections.sort((a, b) => a.name.localeCompare(b.name)),
     httpClients: httpClients.sort(
-      (a, b) => a.system.localeCompare(b.system) || a.name.localeCompare(b.name),
+      (a, b) =>
+        a.system.localeCompare(b.system) || a.name.localeCompare(b.name),
     ),
     flows,
     systems,

@@ -103,8 +103,9 @@ export function GuidePage() {
 
         <h2>3. The services, and which one you want</h2>
         <p>
-          Three request layers, plus scheduled jobs. Requests come in at layer 1,
-          only layer 3 owns loyalty data, and cronjobs publish into the same bus.
+          Three request layers, plus scheduled jobs. Requests come in at layer
+          1, only layer 3 owns loyalty data, and cronjobs publish into the same
+          bus.
         </p>
         <ul>
           <li>
@@ -165,8 +166,8 @@ export function GuidePage() {
 
         <h2>4. How the code is laid out</h2>
         <p>
-          All of these services are NestJS and follow the same layering, which is
-          why this site can be generated at all:
+          All of these services are NestJS and follow the same layering, which
+          is why this site can be generated at all:
         </p>
         <ul>
           <li>
@@ -179,9 +180,9 @@ export function GuidePage() {
             Kafka equivalent of a controller. Binds a topic to a handler.
           </li>
           <li>
-            <strong>Cron command</strong> (<code>@Command</code> in nlp-cronjob) —
-            a scheduled CLI job. Same role as a controller: validate flags, call
-            one use case.
+            <strong>Cron command</strong> (<code>@Command</code> in nlp-cronjob)
+            — a scheduled CLI job. Same role as a controller: validate flags,
+            call one use case.
           </li>
           <li>
             <strong>Use case</strong> (<code>*.use-case.ts</code>, one class
@@ -202,9 +203,9 @@ export function GuidePage() {
             the BFFs keep their own collections as local read models. See{" "}
             <Link to="/database">Mongo collections</Link> for the name as it is
             created, which use case inserts vs queries it, and how documents
-            point at other collections. See{' '}
-            <Link to="/dependencies">HTTP dependencies</Link> for every axios call
-            (D03, SAP, PNS, IKM) a use case actually makes.
+            point at other collections. See{" "}
+            <Link to="/dependencies">HTTP dependencies</Link> for every axios
+            call (D03, SAP, PNS, IKM) a use case actually makes.
           </li>
           <li>
             <strong>DTO</strong> — request, response and event shapes, with{" "}

@@ -69,7 +69,10 @@ function buildIndexes(core: CoreData): Indexes {
   const flowByEntry = new Map<string, CoreData["flowIndex"][number]>();
   for (const flow of core.flowIndex) flowByEntry.set(flow.entry.id, flow);
 
-  const collectionsBySchemaId = new Map<string, CoreData["collections"][number][]>();
+  const collectionsBySchemaId = new Map<
+    string,
+    CoreData["collections"][number][]
+  >();
   for (const collection of core.collections ?? []) {
     if (!collection.entitySchemaId) continue;
     const list = collectionsBySchemaId.get(collection.entitySchemaId) ?? [];

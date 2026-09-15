@@ -27,7 +27,7 @@ A website a new joiner (or anyone) can use to **look up any use case, flow, and 
 Requirements that must remain true:
 
 1. **End-to-end.** A reader can follow a request from the HTTP (or Kafka) entry, through use cases, across Kafka topics into other services, down to Mongo/D03/SAP/etc.
-3. **Onboarding.** A short mental-model page (`/guide`) explains that _every cross-service call is Kafka_, request/reply + Failed topics, and which repo owns what.
+2. **Onboarding.** A short mental-model page (`/guide`) explains that _every cross-service call is Kafka_, request/reply + Failed topics, and which repo owns what.
 3. **Onboarding.** A short mental-model page (`/guide`) explains that _every cross-service call is Kafka_, request/reply + Failed topics, and which repo owns what.
 4. **Regenerable.** Re-run against the latest `origin/sit` (or a release tag / commit) without rewriting pages by hand.
 5. **Provenance.** Every page must show which branch, commit, and nearest tag the extraction came from, with GitHub deep links to the exact line.
@@ -144,7 +144,7 @@ Then `npm run update`. The site's Releases page already lists recent tags per re
 
 7. **Mongo collections** come from `*MongoRepository` (`db.collection(...)` / `collectionName`), not Mongoose. Attribute create vs query from the use-case (or manager) entry method call graph, same as topics — not a class-level union of every repository method. Draw them as a **database diagram** (table cards with columns and PK/FK lines), not a mermaid `erDiagram`.
 
-9. **nlp-cronjob** is a fifth repo. Nest Commander `@Command` classes are catalogued as `CRON /jobs/<name>` endpoints. Jobs use the same use-case / axios / Mongo extractors. Do not skip `origin/sit` for it.
+8. **nlp-cronjob** is a fifth repo. Nest Commander `@Command` classes are catalogued as `CRON /jobs/<name>` endpoints. Jobs use the same use-case / axios / Mongo extractors. Do not skip `origin/sit` for it.
 
 ### Known remaining accuracy issues
 
@@ -160,20 +160,20 @@ Then `npm run update`. The site's Releases page already lists recent tags per re
 
 Hash router (`HashRouter`) so `dist/` works from any static path.
 
-| Route                            | Page                                                                                  |
-| -------------------------------- | ------------------------------------------------------------------------------------- |
-| `/`                              | Overview: stats, architecture **sequence** diagram, four services, sample entry flows |
-| `/guide`                         | **Hand-written** new-joiner mental model (the only prose that is not generated)       |
-| `/services`, `/services/:repoId` | Layer list, who-talks-to-whom matrix, domains, env vars, version                      |
-| `/flows`, `/flows/:flowId`       | Filterable catalog; **mermaid sequence** (time order) + indented step list            |
-| `/endpoints`, `/endpoints/:id`   | HTTP catalog plus **CRON** job commands from nlp-cronjob; request/response fields; link to flow |
-| `/topics`, `/topics/:name`       | Kafka catalog; publishers, consumers, payload schema, family                          |
-| `/use-cases`, `/use-cases/:id`   | Business logic catalog; triggers, I/O schemas, publishes, deps, **Mongo create vs query**, **axios calls**, thrown errors |
-| `/schemas`, `/schemas/:id`       | DTO/entity/enum browser; nested expand; used-by; link to Mongo collection when it is a stored document |
-| `/database`, `/database/:id`     | Mongo collections as a **database diagram** (table cards, columns, PK/FK); create vs query methods; document fields |
-| `/dependencies`, `/dependencies/:id` | Outbound **axios** HTTP clients (D03, SAP, PNS, IKM, …); verb + path; use cases that actually call them |
-| `/systems`                       | Downstream blast radius                                                               |
-| `/releases`                      | Commit/tag provenance + how to regenerate                                             |
+| Route                                | Page                                                                                                                      |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| `/`                                  | Overview: stats, architecture **sequence** diagram, four services, sample entry flows                                     |
+| `/guide`                             | **Hand-written** new-joiner mental model (the only prose that is not generated)                                           |
+| `/services`, `/services/:repoId`     | Layer list, who-talks-to-whom matrix, domains, env vars, version                                                          |
+| `/flows`, `/flows/:flowId`           | Filterable catalog; **mermaid sequence** (time order) + indented step list                                                |
+| `/endpoints`, `/endpoints/:id`       | HTTP catalog plus **CRON** job commands from nlp-cronjob; request/response fields; link to flow                           |
+| `/topics`, `/topics/:name`           | Kafka catalog; publishers, consumers, payload schema, family                                                              |
+| `/use-cases`, `/use-cases/:id`       | Business logic catalog; triggers, I/O schemas, publishes, deps, **Mongo create vs query**, **axios calls**, thrown errors |
+| `/schemas`, `/schemas/:id`           | DTO/entity/enum browser; nested expand; used-by; link to Mongo collection when it is a stored document                    |
+| `/database`, `/database/:id`         | Mongo collections as a **database diagram** (table cards, columns, PK/FK); create vs query methods; document fields       |
+| `/dependencies`, `/dependencies/:id` | Outbound **axios** HTTP clients (D03, SAP, PNS, IKM, …); verb + path; use cases that actually call them                   |
+| `/systems`                           | Downstream blast radius                                                                                                   |
+| `/releases`                          | Commit/tag provenance + how to regenerate                                                                                 |
 
 Search: MiniSearch built in-browser from `core.json` on first ⌘K. Tokenize camelCase and dotted topic names.
 

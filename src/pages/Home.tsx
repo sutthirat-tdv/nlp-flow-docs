@@ -112,7 +112,10 @@ export function HomePage() {
         <Mermaid chart={ARCHITECTURE} />
       </Section>
 
-      <Section title="The services" subtitle="HTTP entry, aggregator, domain, then scheduled jobs">
+      <Section
+        title="The services"
+        subtitle="HTTP entry, aggregator, domain, then scheduled jobs"
+      >
         <div className="grid grid--2">
           {core.repos
             .slice()
