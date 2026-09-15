@@ -64,7 +64,13 @@ async function getMermaid() {
 
 let counter = 0;
 
-export function Mermaid({ chart }: { chart: string }) {
+export function Mermaid({
+  chart,
+  scroll = false,
+}: {
+  chart: string;
+  scroll?: boolean;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -91,7 +97,7 @@ export function Mermaid({ chart }: { chart: string }) {
   if (!chart.trim()) return null;
 
   return (
-    <div className="mermaid-wrap">
+    <div className={`mermaid-wrap${scroll ? " mermaid-wrap--scroll" : ""}`}>
       {error ? (
         <div>
           <p className="dimmer" style={{ fontSize: 12 }}>

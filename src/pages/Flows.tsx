@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 
+import { FlowSequence } from "../components/FlowSequence";
 import { FlowTrace } from "../components/FlowTrace";
 import {
   Badge,
@@ -275,6 +276,17 @@ export function FlowDetailPage() {
           </div>
         </Section>
       ) : null}
+
+      <Section
+        title="Sequence"
+        subtitle="who talks to whom, in time order — one arrow per Kafka hop"
+      >
+        {flow ? (
+          <FlowSequence key={`${summary.id}-seq`} steps={flow.steps} />
+        ) : (
+          <div className="empty">Loading diagram…</div>
+        )}
+      </Section>
 
       <Section
         title="How it runs, end to end"

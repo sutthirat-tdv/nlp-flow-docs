@@ -599,6 +599,20 @@ tbody tr:hover {
   margin: 0 auto;
 }
 
+.mermaid-wrap--scroll {
+  overflow-x: auto;
+}
+
+.mermaid-wrap--scroll svg {
+  max-width: none !important;
+  min-width: 720px;
+}
+
+.flow-sequence__legend {
+  font-size: 12.5px;
+  margin: 0 0 10px;
+}
+
 /* ---------------------------------------------------------- flow trace */
 .trace {
   display: flex;

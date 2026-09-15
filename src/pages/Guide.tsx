@@ -11,13 +11,26 @@ import { Badge, PageHead, Section } from "../components/ui";
 import { useData } from "../data";
 
 const REQUEST_REPLY = `sequenceDiagram
+  autonumber
   actor C as Channel
   participant B as OpenAPI
   participant D as TMF658
-  C ->> B: POST /legacy-api/v1/campaigns/check
-  B ->> D: nlp.pty.checkPrivilege
-  D -->> B: nlp.pty.privilegeChecked
-  B -->> C: 200 response`;
+  C ->> B: POST /campaigns/check
+  Note over B: Check Privilege
+  B ->> D: checkPrivilege
+  Note over D: CheckPrivilegeUseCase
+  D -->> B: privilegeChecked
+  B -->> C: HTTP 200`;
+
+const REQUEST_FAIL = `sequenceDiagram
+  autonumber
+  actor C as Channel
+  participant B as OpenAPI
+  participant D as TMF658
+  C ->> B: POST /campaigns/check
+  B ->> D: checkPrivilege
+  D -x B: checkPrivilegeFailed
+  B -->> C: HTTP error`;
 
 export function GuidePage() {
   const { core } = useData();
@@ -80,6 +93,7 @@ export function GuidePage() {
             <Badge tone="red">failure</Badge>. It was not done, here is why.
           </li>
         </ul>
+        <Mermaid chart={REQUEST_FAIL} />
         <p>
           Separately, <code>sid.cdc.*</code> topics are{" "}
           <Badge tone="purple">CDC</Badge> change streams from other systems'

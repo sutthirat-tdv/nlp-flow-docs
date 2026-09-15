@@ -5,6 +5,7 @@ import { Badge, PageHead, RepoBadge, Section, Stat } from "../components/ui";
 import { useData } from "../data";
 
 const ARCHITECTURE = `sequenceDiagram
+  autonumber
   actor Ch as Channel
   actor Op as Operator
   participant OpenAPI as OpenAPI
