@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Route, Routes, useLocation } from "react-router-dom";
 
+import { useAuth } from "./auth/AuthContext";
 import { SearchPalette } from "./components/SearchPalette";
 import { useData } from "./data";
 import { CollectionDetailPage, CollectionsPage } from "./pages/Collections";
@@ -80,7 +81,23 @@ function Sidebar({ onSearch }: { onSearch: () => void }) {
         <div className="sidebar__label">Provenance</div>
         {link("/releases", "Versions & updates")}
       </div>
+
+      <SidebarAccount />
     </nav>
+  );
+}
+
+function SidebarAccount() {
+  const { email, signOut } = useAuth();
+  return (
+    <div className="sidebar__account">
+      <span className="mono sidebar__account-email" title={email}>
+        {email}
+      </span>
+      <button type="button" className="expander" onClick={signOut}>
+        sign out
+      </button>
+    </div>
   );
 }
 

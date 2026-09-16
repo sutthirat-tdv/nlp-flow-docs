@@ -189,6 +189,13 @@ The `/guide` page is the **only** hand-written content. If platform facts change
 
 ---
 
+## Access (sign-in gate)
+
+The site is gated behind an email-magic-link screen restricted to `@terradigitalventures.com` (`src/auth/`), backed by stateless Cloudflare Pages Functions (`functions/api/auth/*`, no database) that sign short-lived HMAC tokens and send the link via Resend. Full detail, setup steps, and the honest limits of what this does and doesn't protect are in `README.md` under **Access** — read that before touching auth. Two things that matter for future work here:
+
+- This makes Cloudflare Pages the deployment target, not "any static host" — `functions/` needs Pages' Functions runtime.
+- `npm run dev` (plain Vite) bypasses the gate via an `import.meta.env.DEV` branch so local iteration on the catalog pages isn't blocked; that branch is compiled out of `npm run build`. Test the real gate with `npm run pages:dev`.
+
 ## File map
 
 ```
@@ -207,6 +214,10 @@ nlp-flow-docs/
     model.ts               shared types
     index.ts               orchestrate + write public/data
   src/                     Vite React app
+    auth/                  sign-in gate: AuthGate, AuthContext, session.ts
+  functions/               Cloudflare Pages Functions — /api/auth/* (see README "Access")
+  wrangler.toml            Pages Functions config for `npm run pages:dev`
+  .dev.vars.example        template for local auth secrets (gitignored: .dev.vars)
   public/data/             generated JSON (gitignored if large; regenerate)
   .cache/snapshots/        gitignored
 ```

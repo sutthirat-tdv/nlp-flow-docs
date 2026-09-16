@@ -1,0 +1,24 @@
+# Local secrets for `npm run pages:dev` (wrangler pages dev). Copy to
+# `.dev.vars` (gitignored) and fill in real values — never commit that file.
+#
+# In production these are set as encrypted Cloudflare Pages secrets instead:
+#   npx wrangler pages secret put AUTH_TOKEN_SECRET
+#   npx wrangler pages secret put RESEND_API_KEY
+# (SITE_URL and ALLOWED_EMAIL_DOMAIN aren't secret — set them as plain
+# environment variables in the Pages dashboard, or in [vars] in wrangler.toml.)
+
+# Long random string — e.g. `openssl rand -base64 48`. Signs magic-link and
+# session tokens. Rotating this instantly invalidates every signed-in session.
+AUTH_TOKEN_SECRET=replace-with-a-long-random-secret
+
+# API key from https://resend.com — requires a verified sending domain.
+RESEND_API_KEY=re_replace_me
+
+# Must be a verified sender on that Resend domain.
+MAIL_FROM="NLP Loyalty Docs <docs@terradigitalventures.com>"
+
+# Only this domain may sign in. Defaults to terradigitalventures.com if unset.
+ALLOWED_EMAIL_DOMAIN=terradigitalventures.com
+
+# Public origin the emailed link points back at.
+SITE_URL=http://localhost:4174
