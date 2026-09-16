@@ -192,7 +192,9 @@ function main(): void {
   }
 
   // ----------------------------------------------------------- repo docs
-  const repoTitles = new Map(config.repos.map((r) => [r.id, r.title]));
+  const repoTitles = new Map(
+    config.repos.map((r) => [r.id, r.tag || r.title]),
+  );
   const systemTitles = new Map(
     Object.entries(config.downstreamSystems).map(([id, s]) => [id, s.title]),
   );
@@ -224,6 +226,7 @@ function main(): void {
       id: repo.id,
       name: repo.name,
       title: repo.title,
+      tag: repo.tag,
       role: repo.role,
       layer: repo.layer,
       summary: repo.summary,

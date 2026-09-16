@@ -9,7 +9,8 @@ export function FlowSequence({ steps }: { steps: FlowStep[] }) {
   const { indexes, core } = useData();
   const chart = useMemo(() => {
     const repoTitles = new Map<string, string>();
-    for (const [id, repo] of indexes.repoById) repoTitles.set(id, repo.title);
+    for (const [id, repo] of indexes.repoById)
+      repoTitles.set(id, repo.tag || repo.title);
     const systemTitles = new Map<string, string>();
     for (const sys of core.systems) systemTitles.set(sys.id, sys.title);
     return toSequence(steps, { repoTitles, systemTitles });

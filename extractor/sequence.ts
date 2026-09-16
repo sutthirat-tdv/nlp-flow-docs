@@ -45,11 +45,11 @@ export interface SequenceInput {
 const REPO_ORDER = ["openapi-bff", "backoffice-bff", "agg-common", "tmf658"];
 
 const SHORT_TITLE: Record<string, string> = {
-  "openapi-bff": "OpenAPI",
-  "backoffice-bff": "BackOffice",
-  "agg-common": "Aggregator",
-  tmf658: "TMF658",
-  cronjob: "Cronjob",
+  "openapi-bff": "OPENAPI",
+  "backoffice-bff": "BACKOFFICE",
+  "agg-common": "DAG",
+  tmf658: "DOS",
+  cronjob: "CRONJOB",
 };
 
 /** Prefer short names on lifelines so many systems still fit. */

@@ -11,6 +11,8 @@ export interface RepoConfig {
   id: string;
   name: string;
   title: string;
+  /** Short badge / diagram label, e.g. OPENAPI, DOS, DAG. */
+  tag: string;
   role: "entrypoint" | "aggregator" | "domain" | "batch";
   layer: number;
   summary: string;

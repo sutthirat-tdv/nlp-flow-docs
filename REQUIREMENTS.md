@@ -16,13 +16,13 @@ Location of the site: `nlp-flow-docs/` next to the four service checkouts in `co
 
 A website a new joiner (or anyone) can use to **look up any use case, flow, and data schema** across:
 
-| Config id        | Repository                              | Role                                               |
-| ---------------- | --------------------------------------- | -------------------------------------------------- |
-| `openapi-bff`    | `nlp-openapi-bff`                       | Layer 1 HTTP entry (Legacy API + OpenAPI Warranty) |
-| `backoffice-bff` | `nlp-backoffice-bff`                    | Layer 1 HTTP entry (Back Office console)           |
-| `agg-common`     | `esb-loyalty-management-agg-common`     | Layer 2 Kafka aggregator                           |
-| `tmf658`         | `esb-dos-TMF658-loyalty-management-nlp` | Layer 3 TMF658 domain / system of record           |
-| `cronjob`        | `nlp-cronjob`                           | Layer 4 scheduled Nest Commander jobs              |
+| Config id        | Tag          | Repository                              | Role                                               |
+| ---------------- | ------------ | --------------------------------------- | -------------------------------------------------- |
+| `openapi-bff`    | **OPENAPI**  | `nlp-openapi-bff`                       | Layer 1 HTTP entry (Legacy API + OpenAPI Warranty) |
+| `backoffice-bff` | **BACKOFFICE** | `nlp-backoffice-bff`                  | Layer 1 HTTP entry (Back Office console)           |
+| `agg-common`     | **DAG**      | `esb-loyalty-management-agg-common`     | Layer 2 Kafka aggregator                           |
+| `tmf658`         | **DOS**      | `esb-dos-TMF658-loyalty-management-nlp` | Layer 3 TMF658 domain / system of record           |
+| `cronjob`        | **CRONJOB**  | `nlp-cronjob`                           | Layer 4 scheduled Nest Commander jobs              |
 
 Requirements that must remain true:
 

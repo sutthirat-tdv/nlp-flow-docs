@@ -9,11 +9,11 @@ const ARCHITECTURE = `sequenceDiagram
   autonumber
   actor Ch as Channel
   actor Op as Operator
-  participant OpenAPI as OpenAPI
-  participant BackOffice as BackOffice
-  participant Agg as Aggregator
-  participant TMF as TMF658
-  participant Cron as Cron
+  participant OpenAPI as OPENAPI
+  participant BackOffice as BACKOFFICE
+  participant Agg as DAG
+  participant TMF as DOS
+  participant Cron as CRONJOB
   Ch ->> OpenAPI: HTTP
   OpenAPI ->> TMF: nlp.pty.* command
   TMF -->> OpenAPI: *ed reply
@@ -142,6 +142,7 @@ export function HomePage() {
                 <div className="repo-card__name">{repo.name}</div>
                 <div className="repo-card__summary">{repo.summary}</div>
                 <div className="badges">
+                  <Badge tone="accent">{repo.tag}</Badge>
                   <Badge tone="accent">layer {repo.layer}</Badge>
                   {repo.id === "cronjob" && repo.stats.endpoints ? (
                     <Badge>{repo.stats.endpoints} batch jobs</Badge>

@@ -329,6 +329,8 @@ export interface RepoDoc {
   id: string;
   name: string;
   title: string;
+  /** Short badge / diagram label (OPENAPI, BACKOFFICE, DAG, DOS, CRONJOB). */
+  tag: string;
   role: string;
   layer: number;
   summary: string;

@@ -25,11 +25,11 @@ const MAX_STEPS = 70;
 const MAX_IO_PER_USE_CASE = 8;
 
 const SHORT_REPO: Record<string, string> = {
-  "openapi-bff": "OpenAPI",
-  "backoffice-bff": "BackOffice",
-  "agg-common": "Aggregator",
-  tmf658: "TMF658",
-  cronjob: "Cronjob",
+  "openapi-bff": "OPENAPI",
+  "backoffice-bff": "BACKOFFICE",
+  "agg-common": "DAG",
+  tmf658: "DOS",
+  cronjob: "CRONJOB",
 };
 
 export interface GraphInput {

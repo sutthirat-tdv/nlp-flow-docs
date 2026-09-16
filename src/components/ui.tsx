@@ -113,11 +113,13 @@ export function RepoBadge({ repoId }: { repoId: string | null | undefined }) {
       ? "accent"
       : repo?.role === "aggregator"
         ? "purple"
-        : "teal";
+        : repo?.role === "batch"
+          ? "amber"
+          : "teal";
   return (
     <Link to={`/services/${repoId}`} style={{ textDecoration: "none" }}>
-      <Badge tone={tone} title={repo?.name}>
-        {repo?.title ?? repoId}
+      <Badge tone={tone} title={repo?.title ?? repo?.name}>
+        {repo?.tag ?? repo?.title ?? repoId}
       </Badge>
     </Link>
   );

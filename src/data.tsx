@@ -195,8 +195,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       loadSchemas,
       loadSchema,
       loadFlow,
-      repoTitle: (repoId) =>
-        repoId ? (indexes.repoById.get(repoId)?.title ?? repoId) : "—",
+      repoTitle: (repoId) => {
+        if (!repoId) return "—";
+        const repo = indexes.repoById.get(repoId);
+        return repo?.tag ?? repo?.title ?? repoId;
+      },
     };
   }, [core, loadSchemas, loadSchema, loadFlow]);
 

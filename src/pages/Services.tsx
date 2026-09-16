@@ -31,6 +31,9 @@ export function ServicesPage() {
           <div key={repo.id} className="layer-row">
             <div className="layer-row__num">{repo.layer}</div>
             <Link to={`/services/${repo.id}`} className="repo-card">
+              <div className="badges" style={{ marginBottom: 6 }}>
+                <Badge tone="accent">{repo.tag}</Badge>
+              </div>
               <div className="repo-card__title">{repo.title}</div>
               <div className="repo-card__name">
                 {repo.name} · {repo.branch} @ {repo.commit.shortSha} ·{" "}
