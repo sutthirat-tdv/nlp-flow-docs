@@ -52,21 +52,26 @@ function ClientsTable({ clients }: { clients: HttpClient[] }) {
                   {client.className}
                 </div>
               </td>
-              <td>
-                <div className="badges">
+              <td className="deps-calls">
+                <div className="deps-calls__list">
                   {uniqueOps(client)
                     .slice(0, 4)
                     .map((op) => (
-                      <Badge
+                      <div
                         key={`${op.httpMethod}:${op.path}`}
-                        tone={VERB_TONE[op.httpMethod]}
+                        className="deps-calls__row"
                       >
-                        {op.httpMethod} /{op.path}
-                      </Badge>
+                        <Badge tone={VERB_TONE[op.httpMethod]}>
+                          {op.httpMethod}
+                        </Badge>
+                        <span className="mono deps-calls__path">
+                          /{op.path}
+                        </span>
+                      </div>
                     ))}
                   {uniqueOps(client).length > 4 ? (
                     <span className="dimmer" style={{ fontSize: 12 }}>
-                      +{uniqueOps(client).length - 4}
+                      +{uniqueOps(client).length - 4} more
                     </span>
                   ) : null}
                 </div>
