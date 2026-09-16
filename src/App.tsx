@@ -9,6 +9,7 @@ import { EndpointDetailPage, EndpointsPage } from "./pages/Endpoints";
 import { FlowDetailPage, FlowsPage } from "./pages/Flows";
 import { GuidePage } from "./pages/Guide";
 import { HomePage } from "./pages/Home";
+import { JobDetailPage, JobsPage } from "./pages/Jobs";
 import { NotFoundPage } from "./pages/NotFound";
 import { ReleasesPage } from "./pages/Releases";
 import { SchemaDetailPage, SchemasPage } from "./pages/Schemas";
@@ -21,6 +22,10 @@ function Sidebar({ onSearch }: { onSearch: () => void }) {
   const { core } = useData();
   const isMac =
     typeof navigator !== "undefined" && /Mac/.test(navigator.platform);
+  const httpEndpointCount = core.endpoints.filter((e) => e.method !== "CRON")
+    .length;
+  const batchJobCount = core.endpoints.filter((e) => e.method === "CRON")
+    .length;
 
   const link = (to: string, label: string, count?: number) => (
     <NavLink key={to} to={to} className="sidebar__link" end={to === "/"}>
@@ -55,7 +60,8 @@ function Sidebar({ onSearch }: { onSearch: () => void }) {
       <div className="sidebar__group">
         <div className="sidebar__label">Behaviour</div>
         {link("/flows", "End-to-end flows", core.stats.flows)}
-        {link("/endpoints", "API endpoints", core.stats.endpoints)}
+        {link("/endpoints", "API endpoints", httpEndpointCount)}
+        {link("/jobs", "Batch jobs", batchJobCount)}
         {link("/topics", "Kafka topics", core.stats.topics)}
         {link("/use-cases", "Use cases", core.stats.useCases)}
       </div>
@@ -119,6 +125,8 @@ export function App() {
               path="/endpoints/:endpointId"
               element={<EndpointDetailPage />}
             />
+            <Route path="/jobs" element={<JobsPage />} />
+            <Route path="/jobs/:jobId" element={<JobDetailPage />} />
             <Route path="/topics" element={<TopicsPage />} />
             <Route path="/topics/:topicName" element={<TopicDetailPage />} />
             <Route path="/use-cases" element={<UseCasesPage />} />

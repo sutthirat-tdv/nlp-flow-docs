@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 
 import {
   Badge,
@@ -13,6 +13,7 @@ import {
   UseCaseLink,
 } from "../components/ui";
 import { useData, useSchema } from "../data";
+import { endpointHref, isBatchJob } from "../entryLinks";
 
 export function EndpointsPage() {
   const { core } = useData();
@@ -21,9 +22,14 @@ export function EndpointsPage() {
   const repo = params.get("repo") ?? "all";
   const method = params.get("method") ?? "all";
 
+  const httpEndpoints = useMemo(
+    () => core.endpoints.filter((e) => !isBatchJob(e.method)),
+    [core.endpoints],
+  );
+
   const endpoints = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    return core.endpoints
+    return httpEndpoints
       .filter((e) => (repo === "all" ? true : e.repoId === repo))
       .filter((e) => (method === "all" ? true : e.method === method))
       .filter((e) =>
@@ -34,7 +40,7 @@ export function EndpointsPage() {
             e.tags.some((t) => t.toLowerCase().includes(needle))
           : true,
       );
-  }, [core.endpoints, repo, method, query]);
+  }, [httpEndpoints, repo, method, query]);
 
   const setParam = (key: string, value: string) => {
     const next = new URLSearchParams(params);
@@ -49,7 +55,8 @@ export function EndpointsPage() {
         Every HTTP route the two BFFs expose, with the guard that protects it,
         the permission it needs, the request and response schema, and the use
         case behind it. Paths already include the global prefix and version, so
-        they are the real URLs.
+        they are the real URLs. Scheduled Nest Commander jobs live under{" "}
+        <Link to="/jobs">Batch jobs</Link>.
       </PageHead>
 
       <div className="toolbar">
@@ -66,7 +73,9 @@ export function EndpointsPage() {
         >
           <option value="all">Both BFFs</option>
           {core.repos
-            .filter((r) => r.stats.endpoints > 0)
+            .filter((r) =>
+              httpEndpoints.some((e) => e.repoId === r.id),
+            )
             .map((r) => (
               <option key={r.id} value={r.id}>
                 {r.title}
@@ -79,7 +88,7 @@ export function EndpointsPage() {
           onChange={(e) => setParam("method", e.target.value)}
         >
           <option value="all">Any method</option>
-          {["GET", "POST", "PUT", "PATCH", "DELETE", "CRON"].map((m) => (
+          {["GET", "POST", "PUT", "PATCH", "DELETE"].map((m) => (
             <option key={m} value={m}>
               {m}
             </option>
@@ -87,7 +96,7 @@ export function EndpointsPage() {
         </select>
         <span className="dimmer" style={{ fontSize: 12.5, marginLeft: "auto" }}>
           {endpoints.length.toLocaleString()} of{" "}
-          {core.endpoints.length.toLocaleString()}
+          {httpEndpoints.length.toLocaleString()}
         </span>
       </div>
 
@@ -111,7 +120,7 @@ export function EndpointsPage() {
                 <td>
                   <Link
                     className="mono"
-                    to={`/endpoints/${encodeURIComponent(endpoint.id)}`}
+                    to={endpointHref(endpoint)}
                   >
                     {endpoint.path}
                   </Link>
@@ -199,6 +208,10 @@ export function EndpointDetailPage() {
         Unknown endpoint. <Link to="/endpoints">Back to the list</Link>.
       </Empty>
     );
+  }
+
+  if (isBatchJob(endpoint.method)) {
+    return <Navigate to={endpointHref(endpoint)} replace />;
   }
 
   const flow = indexes.flowByEntry.get(endpoint.id);

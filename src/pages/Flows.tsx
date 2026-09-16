@@ -16,6 +16,7 @@ import {
   UseCaseLink,
 } from "../components/ui";
 import { useData, useFlow } from "../data";
+import { endpointHref, isBatchJob } from "../entryLinks";
 
 export function FlowsPage() {
   const { core } = useData();
@@ -75,7 +76,7 @@ export function FlowsPage() {
           onChange={(e) => setParam("entry", e.target.value)}
         >
           <option value="all">Any entry</option>
-          <option value="endpoint">HTTP endpoint</option>
+          <option value="endpoint">HTTP / batch entry</option>
           <option value="topic">Kafka topic</option>
         </select>
         <select
@@ -205,12 +206,16 @@ export function FlowDetailPage() {
               "Triggered by",
               endpoint ? (
                 <span>
-                  <Badge tone={endpoint.method}>{endpoint.method}</Badge>{" "}
+                  <Badge tone={endpoint.method}>
+                    {isBatchJob(endpoint.method) ? "BATCH" : endpoint.method}
+                  </Badge>{" "}
                   <Link
                     className="mono"
-                    to={`/endpoints/${encodeURIComponent(endpoint.id)}`}
+                    to={endpointHref(endpoint)}
                   >
-                    {endpoint.path}
+                    {isBatchJob(endpoint.method)
+                      ? endpoint.path.replace(/^\/jobs\//, "")
+                      : endpoint.path}
                   </Link>{" "}
                   <span className="dimmer">
                     in {indexes.repoById.get(endpoint.repoId)?.title}

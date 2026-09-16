@@ -39,7 +39,9 @@ export function ServicesPage() {
               <div className="repo-card__summary">{repo.summary}</div>
               <div className="badges">
                 <Badge tone="accent">{repo.role}</Badge>
-                {repo.stats.endpoints ? (
+                {repo.id === "cronjob" && repo.stats.endpoints ? (
+                  <Badge>{repo.stats.endpoints} batch jobs</Badge>
+                ) : repo.stats.endpoints ? (
                   <Badge>{repo.stats.endpoints} endpoints</Badge>
                 ) : (
                   <Badge tone="amber">no HTTP surface</Badge>
@@ -207,8 +209,8 @@ export function ServiceDetailPage() {
       <div className="grid grid--4">
         <Stat
           value={repo.stats.endpoints}
-          label="Endpoints"
-          to={`/endpoints?repo=${repo.id}`}
+          label={repo.id === "cronjob" ? "Batch jobs" : "Endpoints"}
+          to={repo.id === "cronjob" ? "/jobs" : `/endpoints?repo=${repo.id}`}
         />
         <Stat
           value={repo.stats.useCases}

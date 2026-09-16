@@ -18,6 +18,7 @@ import {
   UseCaseLink,
 } from "../components/ui";
 import { useData, useSchema } from "../data";
+import { endpointHref, isBatchJob } from "../entryLinks";
 import type { Dependency } from "../types";
 
 const DEP_TONE: Record<string, string | undefined> = {
@@ -392,17 +393,29 @@ export function UseCaseDetailPage() {
                   return (
                     <tr key={id}>
                       <td>
-                        <Badge tone={endpoint ? endpoint.method : "teal"}>
-                          {endpoint ? "HTTP" : "Kafka"}
+                        <Badge
+                          tone={
+                            endpoint
+                              ? endpoint.method
+                              : "teal"
+                          }
+                        >
+                          {endpoint
+                            ? isBatchJob(endpoint.method)
+                              ? "BATCH"
+                              : "HTTP"
+                            : "Kafka"}
                         </Badge>
                       </td>
                       <td>
                         {endpoint ? (
                           <Link
                             className="mono"
-                            to={`/endpoints/${encodeURIComponent(endpoint.id)}`}
+                            to={endpointHref(endpoint)}
                           >
-                            {endpoint.method} {endpoint.path}
+                            {isBatchJob(endpoint.method)
+                              ? endpoint.path.replace(/^\/jobs\//, "")
+                              : `${endpoint.method} ${endpoint.path}`}
                           </Link>
                         ) : consumer ? (
                           <TopicLink topic={consumer.topic} />

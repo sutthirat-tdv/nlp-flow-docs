@@ -9,6 +9,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { useData } from "../data";
+import { endpointHref, isBatchJob } from "../entryLinks";
 import type { FlowStep } from "../types";
 import { RepoBadge, SystemLink, TopicLink, UseCaseLink } from "./ui";
 
@@ -523,7 +524,11 @@ export function FlowTrace({ steps }: { steps: FlowStep[] }) {
           <Hop
             n={nums.get(root.index) ?? 1}
             kind="http"
-            kindLabel="HTTP"
+            kindLabel={
+              root.step.label.toUpperCase().startsWith("CRON")
+                ? "BATCH"
+                : "HTTP"
+            }
             title={<EndpointTitle step={root.step} />}
             aside={
               root.step.repoId ? <RepoBadge repoId={root.step.repoId} /> : null
@@ -572,9 +577,12 @@ function EndpointTitle({ step }: { step: FlowStep }) {
   const { indexes } = useData();
   const endpoint = indexes.endpointById.get(step.id);
   if (!endpoint) return <span className="mono">{step.label}</span>;
+  const label = isBatchJob(endpoint.method)
+    ? endpoint.path.replace(/^\/jobs\//, "")
+    : `${endpoint.method} ${endpoint.path}`;
   return (
-    <Link className="mono" to={`/endpoints/${encodeURIComponent(endpoint.id)}`}>
-      {endpoint.method} {endpoint.path}
+    <Link className="mono" to={endpointHref(endpoint)}>
+      {label}
     </Link>
   );
 }

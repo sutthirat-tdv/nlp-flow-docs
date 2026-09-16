@@ -339,6 +339,11 @@ pre {
   border-color: #6b2622;
   background: #33110f;
 }
+.badge--CRON {
+  color: #e6c98a;
+  border-color: #5c4a1e;
+  background: #2a220c;
+}
 .badge--accent {
   color: #cfe1ff;
   border-color: #2c4b7f;

@@ -181,8 +181,9 @@ export function GuidePage() {
           </li>
           <li>
             <strong>Cron command</strong> (<code>@Command</code> in nlp-cronjob)
-            — a scheduled CLI job. Same role as a controller: validate flags,
-            call one use case.
+            — a scheduled CLI job listed under{" "}
+            <Link to="/jobs">Batch jobs</Link>. Same role as a controller:
+            validate flags, call one use case.
           </li>
           <li>
             <strong>Use case</strong> (<code>*.use-case.ts</code>, one class

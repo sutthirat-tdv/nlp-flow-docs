@@ -10,6 +10,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useData } from "../data";
+import { endpointHref, isBatchJob } from "../entryLinks";
 
 interface Doc {
   id: string;
@@ -24,6 +25,7 @@ interface Doc {
 const KIND_LABEL: Record<string, string> = {
   flow: "Flow",
   endpoint: "API",
+  job: "Batch",
   "use-case": "Use case",
   topic: "Topic",
   consumer: "Consumer",
@@ -52,9 +54,11 @@ export function SearchPalette({ onClose }: { onClose: () => void }) {
         route: `/flows/${encodeURIComponent(f.id)}`,
       })),
       ...core.endpoints.map((e) => ({
-        id: `endpoint|${e.id}`,
-        kind: "endpoint",
-        title: `${e.method} ${e.path}`,
+        id: `${isBatchJob(e.method) ? "job" : "endpoint"}|${e.id}`,
+        kind: isBatchJob(e.method) ? "job" : "endpoint",
+        title: isBatchJob(e.method)
+          ? e.path.replace(/^\/jobs\//, "")
+          : `${e.method} ${e.path}`,
         subtitle: e.summary ?? `${e.controller}.${e.handler}`,
         repoId: e.repoId,
         body: [
@@ -64,7 +68,7 @@ export function SearchPalette({ onClose }: { onClose: () => void }) {
           ...e.tags,
           ...e.permissions,
         ].join(" "),
-        route: `/endpoints/${encodeURIComponent(e.id)}`,
+        route: endpointHref(e),
       })),
       ...core.useCases.map((u) => ({
         id: `use-case|${u.id}`,
@@ -193,7 +197,7 @@ export function SearchPalette({ onClose }: { onClose: () => void }) {
         <input
           ref={inputRef}
           className="palette__input"
-          placeholder="Search flows, endpoints, use cases, topics, schemas, collections, HTTP…"
+          placeholder="Search flows, endpoints, batch jobs, use cases, topics…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {

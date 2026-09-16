@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Mermaid } from "../components/Mermaid";
 import { Badge, PageHead, RepoBadge, Section, Stat } from "../components/ui";
 import { useData } from "../data";
+import { isBatchJob } from "../entryLinks";
 
 const ARCHITECTURE = `sequenceDiagram
   autonumber
@@ -26,6 +27,12 @@ const ARCHITECTURE = `sequenceDiagram
 
 export function HomePage() {
   const { core } = useData();
+  const httpEndpointCount = core.endpoints.filter(
+    (e) => !isBatchJob(e.method),
+  ).length;
+  const batchJobCount = core.endpoints.filter((e) =>
+    isBatchJob(e.method),
+  ).length;
 
   const entryFlows = core.flowIndex
     .filter((f) => f.entry.kind === "topic" && f.external && f.stepCount > 3)
@@ -59,9 +66,14 @@ export function HomePage() {
           to="/flows"
         />
         <Stat
-          value={core.stats.endpoints.toLocaleString()}
+          value={httpEndpointCount.toLocaleString()}
           label="API endpoints"
           to="/endpoints"
+        />
+        <Stat
+          value={batchJobCount.toLocaleString()}
+          label="Batch jobs"
+          to="/jobs"
         />
         <Stat
           value={core.stats.topics.toLocaleString()}
@@ -131,7 +143,9 @@ export function HomePage() {
                 <div className="repo-card__summary">{repo.summary}</div>
                 <div className="badges">
                   <Badge tone="accent">layer {repo.layer}</Badge>
-                  {repo.stats.endpoints ? (
+                  {repo.id === "cronjob" && repo.stats.endpoints ? (
+                    <Badge>{repo.stats.endpoints} batch jobs</Badge>
+                  ) : repo.stats.endpoints ? (
                     <Badge>{repo.stats.endpoints} endpoints</Badge>
                   ) : null}
                   <Badge>{repo.stats.useCases} use cases</Badge>

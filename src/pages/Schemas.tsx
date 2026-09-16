@@ -15,6 +15,7 @@ import {
 	UseCaseLink,
 } from '../components/ui';
 import { useData, useRepoSchemas, useSchema } from '../data';
+import { endpointHref, isBatchJob } from '../entryLinks';
 import type { Schema, SchemaField } from '../types';
 
 const LAYER_LABEL: Record<string, string> = {
@@ -425,9 +426,13 @@ function UsageRow({ id }: { id: string }) {
 	if (endpoint) {
 		return (
 			<div style={{ padding: '3px 0' }}>
-				<Badge tone={endpoint.method}>{endpoint.method}</Badge>{' '}
-				<Link className="mono" to={`/endpoints/${encodeURIComponent(endpoint.id)}`}>
-					{endpoint.path}
+				<Badge tone={endpoint.method}>
+					{isBatchJob(endpoint.method) ? 'BATCH' : endpoint.method}
+				</Badge>{' '}
+				<Link className="mono" to={endpointHref(endpoint)}>
+					{isBatchJob(endpoint.method)
+						? endpoint.path.replace(/^\/jobs\//, '')
+						: endpoint.path}
 				</Link>
 			</div>
 		);
