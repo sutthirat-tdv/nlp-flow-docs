@@ -628,7 +628,7 @@ tbody tr:hover {
   color: var(--text-dimmer);
 }
 
-/* Stronger outlines on sequence actors, notes, boxes, and activation bars */
+/* Sequence diagram: stronger outlines on actors, notes, alt/opt frames */
 .flow-sequence .mermaid-wrap,
 .mermaid-wrap {
   background: #0d1426;
@@ -663,7 +663,6 @@ tbody tr:hover {
   stroke: #8aa0c8 !important;
   stroke-width: 1.5px !important;
   fill: #243044 !important;
-  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.28));
 }
 
 .flow-sequence .mermaid-wrap svg .activation0,
@@ -688,20 +687,25 @@ tbody tr:hover {
   stroke-width: 1.4px !important;
 }
 
+/* alt / opt / loop / rect condition frames */
 .flow-sequence .mermaid-wrap svg .loopLine,
 .mermaid-wrap svg .loopLine,
 .mermaid-wrap svg line.loopLine {
-  stroke: #6b82b0 !important;
+  stroke: #c4a35a !important;
+  stroke-width: 1.6px !important;
 }
 
-/* Participant group boxes (Entry / Services / Downstream) */
-.flow-sequence .mermaid-wrap svg .actor-man,
-.flow-sequence .mermaid-wrap svg rect.actor-box,
-.flow-sequence .mermaid-wrap svg .actor-box,
-.mermaid-wrap svg rect.actor-box,
-.mermaid-wrap svg .actor-box {
-  stroke: #7d96c4 !important;
-  stroke-width: 1.5px !important;
+.flow-sequence .mermaid-wrap svg .labelBox,
+.mermaid-wrap svg .labelBox,
+.mermaid-wrap svg rect.labelBox {
+  stroke: #c4a35a !important;
+  stroke-width: 1.4px !important;
+  fill: #2a2414 !important;
+}
+
+.flow-sequence .mermaid-wrap svg .labelText,
+.mermaid-wrap svg .labelText {
+  fill: #f0d9a0 !important;
 }
 
 .mermaid-wrap--scroll {

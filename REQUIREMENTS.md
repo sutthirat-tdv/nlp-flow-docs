@@ -148,7 +148,7 @@ Then `npm run update`. The site's Releases page already lists recent tags per re
 
 9. **Drop `_developer` surfaces from every catalog.** Seed/debug `DeveloperController` / `DevelopEventConsumerController`, `/_developer/` modules, `_developer*` files, and `_test-ac` are not product APIs. Skip them at file walk so endpoints, consumers, CRON jobs, use cases, schemas, collections, and HTTP clients never include them.
 
-10. **Sequence diagrams show concrete I/O.** Prefer `collectionAccess` / `httpAccess` over coarse ctor-only `systems[]`. Draw arrows to short-named system lifelines (D03, LID, Mongo per owning service, …) labeled with verb+path or collection op. Tag `sid.*` / `*.bff.*` Kafka messages as SID / BFF. Cap I/O arrows per use case so charts stay readable.
+10. **Sequence diagrams show concrete I/O.** Prefer `collectionAccess` / `httpAccess` over coarse ctor-only `systems[]`. Draw arrows to short-named system lifelines (D03, LID, Mongo per owning service, …) labeled with verb+path or collection op. Tag `sid.*` / `*.bff.*` Kafka messages as SID / BFF. Cap I/O arrows per use case so charts stay readable. **Failure topics** get a red `rect` / `opt on failure` / `alt success … else on failure` frame; unconsumed publishes get an amber `opt` condition frame.
 
 ### Known remaining accuracy issues
 

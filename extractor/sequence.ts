@@ -3,9 +3,10 @@
  *
  * Lifelines are Channel / Scheduler / External, the service repos, and the
  * downstream systems actually touched (Mongo per owning service, D03, LID,
- * …). Kafka hops stay as arrows between services. Axios and Mongo calls are
- * arrows from the calling service to that system, labeled with verb/path or
- * collection op — not one lifeline per use case.
+ * …). Kafka hops stay as arrows between services. Failure and conditional
+ * branches get bordered frames (alt / opt / rect) so they stand out from the
+ * happy path. Axios and Mongo calls are arrows from the calling service to
+ * that system, labeled with verb/path or collection op.
  */
 import { FlowStep } from "./model.js";
 
@@ -59,6 +60,11 @@ const SYSTEM_LIFELINE: Record<string, string> = {
   mongo: "Mongo",
 };
 
+/** Soft red wash behind failure steps. */
+const FAILURE_RECT = "rgba(140, 48, 48, 0.28)";
+/** Soft amber wash behind optional / conditional steps. */
+const CONDITION_RECT = "rgba(140, 110, 40, 0.22)";
+
 function pid(raw: string): string {
   const cleaned = raw.replace(/[^a-zA-Z0-9]/g, "_") || "x";
   return /^[0-9]/.test(cleaned) ? `p_${cleaned}` : cleaned;
@@ -96,6 +102,17 @@ function arrowFor(kind: string | undefined): string {
   if (kind === "failure") return "-x";
   if (kind === "event" || kind === "reply") return "-->>";
   return "->>";
+}
+
+function isFailureTopic(step: FlowStep): boolean {
+  return step.kind === "topic" && step.detail === "failure";
+}
+
+function isEventTopic(step: FlowStep): boolean {
+  return (
+    step.kind === "topic" &&
+    (step.detail === "event" || step.detail === "reply")
+  );
 }
 
 /** Stable mermaid participant id for a system step (Mongo is per owning DB). */
@@ -165,39 +182,24 @@ export function toSequence(steps: FlowStep[], input: SequenceInput): string {
   );
 
   const declare: string[] = [];
-  const entryDecls: string[] = [];
-  const serviceDecls: string[] = [];
-  const downstreamDecls: string[] = [];
-  const otherDecls: string[] = [];
   const seenIds = new Set<string>();
-
-  const pushDecl = (
-    bucket: string[],
-    id: string,
-    label: string,
-    actor = false,
-  ) => {
+  const remember = (id: string, label: string, actor = false) => {
     if (seenIds.has(id)) return;
     seenIds.add(id);
-    bucket.push(
-      `    ${actor ? "actor" : "participant"} ${pid(id)} as ${msg(label)}`,
+    declare.push(
+      `  ${actor ? "actor" : "participant"} ${pid(id)} as ${msg(label)}`,
     );
   };
 
-  if (hasHttp) pushDecl(entryDecls, "channel", "Channel", true);
-  if (hasCron) pushDecl(entryDecls, "scheduler", "Scheduler", true);
-  if (hasExternalTopic) pushDecl(entryDecls, "external", "External", true);
+  if (hasHttp) remember("channel", "Channel", true);
+  if (hasCron) remember("scheduler", "Scheduler", true);
+  if (hasExternalTopic) remember("external", "External", true);
   for (const repo of [
     ...REPO_ORDER.filter((r) => usedRepos.includes(r)),
     ...usedRepos.filter((r) => !REPO_ORDER.includes(r)),
   ]) {
-    pushDecl(
-      serviceDecls,
-      repo,
-      SHORT_TITLE[repo] ?? input.repoTitles.get(repo) ?? repo,
-    );
+    remember(repo, SHORT_TITLE[repo] ?? input.repoTitles.get(repo) ?? repo);
   }
-  // Downstream systems after the services so Kafka arrows stay left-of-I/O.
   const systemOrder = ["mongo", "d03", "d64", "redis", "sap", "pns"];
   const uniqueSystems = new Map<string, FlowStep>();
   for (const s of systemSteps) {
@@ -216,22 +218,9 @@ export function toSequence(steps: FlowStep[], input: SequenceInput): string {
   ];
   for (const key of orderedSystemKeys) {
     const step = uniqueSystems.get(key)!;
-    pushDecl(downstreamDecls, key, systemParticipantLabel(step, input));
+    remember(key, systemParticipantLabel(step, input));
   }
-  if (hasDeadEnd) pushDecl(otherDecls, "outside", "Outside");
-
-  const pushBox = (color: string, title: string, body: string[]) => {
-    if (!body.length) return;
-    declare.push(`  box ${color} ${title}`);
-    declare.push(...body);
-    declare.push("  end");
-  };
-
-  // Bordered groups so Entry / Services / Downstream are easy to tell apart.
-  pushBox("rgba(40, 56, 88, 0.55)", "Entry", entryDecls);
-  pushBox("rgba(36, 70, 120, 0.5)", "Services", serviceDecls);
-  pushBox("rgba(28, 78, 72, 0.45)", "Downstream", downstreamDecls);
-  declare.push(...otherDecls);
+  if (hasDeadEnd) remember("outside", "Outside");
 
   const lines: string[] = [
     "%%{init: {'sequence': {'useMaxWidth': false, 'wrap': true, 'mirrorActors': false, 'actorMargin': 56, 'width': 150, 'messageMargin': 18}}}%%",
@@ -246,6 +235,83 @@ export function toSequence(steps: FlowStep[], input: SequenceInput): string {
     if (seenArrows.has(key)) return;
     seenArrows.add(key);
     lines.push(`  ${pid(from)} ${arrow} ${pid(to)}: ${msg(text)}`);
+  };
+
+  const emitTopic = (index: number) => {
+    const step = steps[index];
+    const kids = childrenOf(index);
+    const from = ancestorRepo(index);
+    const consumers = kids.filter((i) => steps[i].kind === "consumer");
+    if (!from) {
+      for (const k of kids) walk(k);
+      return;
+    }
+    const business = consumers.filter((i) => steps[i].detail !== "reply");
+    const replies = consumers.filter((i) => steps[i].detail === "reply");
+    const targets = (business.length ? business : replies)
+      .map((i) => steps[i].repoId)
+      .filter((r): r is string => !!r);
+    const unique = [...new Set(targets)];
+    const label = topicLabel(step.label);
+    const arrow = arrowFor(step.detail);
+
+    if (unique.length) {
+      for (const to of unique) pushArrow(from, arrow, to, label);
+    } else {
+      pushArrow(from, arrow, "outside", label);
+    }
+
+    for (const k of kids) walk(k);
+  };
+
+  const emitFailureTopic = (index: number, withNote = true) => {
+    const over = ancestorRepo(index) ?? usedRepos[0] ?? "outside";
+    lines.push(`  rect ${FAILURE_RECT}`);
+    if (withNote) lines.push(`  Note over ${pid(over)}: on failure`);
+    emitTopic(index);
+    lines.push("  end");
+  };
+
+  const emitOptionalTopic = (index: number) => {
+    const step = steps[index];
+    lines.push(`  opt ${msg(topicLabel(step.label))} (no listener here)`);
+    lines.push(`  rect ${CONDITION_RECT}`);
+    emitTopic(index);
+    lines.push("  end");
+    lines.push("  end");
+  };
+
+  const emitTopicKids = (topicIndexes: number[]) => {
+    const commands = topicIndexes.filter(
+      (i) => !isFailureTopic(steps[i]) && !isEventTopic(steps[i]),
+    );
+    const events = topicIndexes.filter((i) => isEventTopic(steps[i]));
+    const failures = topicIndexes.filter((i) => isFailureTopic(steps[i]));
+
+    for (const i of commands) {
+      const dead = !childrenOf(i).some((c) => steps[c].kind === "consumer");
+      if (dead) emitOptionalTopic(i);
+      else emitTopic(i);
+    }
+
+    if (events.length && failures.length) {
+      lines.push("  alt success");
+      for (const i of events) emitTopic(i);
+      lines.push("  else on failure");
+      for (const i of failures) emitFailureTopic(i, false);
+      lines.push("  end");
+      return;
+    }
+
+    for (const i of events) emitTopic(i);
+
+    if (failures.length === 1) {
+      lines.push("  opt on failure");
+      emitFailureTopic(failures[0], false);
+      lines.push("  end");
+    } else {
+      for (const i of failures) emitFailureTopic(i);
+    }
   };
 
   const walk = (index: number) => {
@@ -287,32 +353,13 @@ export function toSequence(steps: FlowStep[], input: SequenceInput): string {
         const to = systemParticipantKey(sys);
         pushArrow(repo, "->>", to, label);
       }
-      for (const k of kids.filter((i) => steps[i].kind === "topic")) walk(k);
+      emitTopicKids(kids.filter((i) => steps[i].kind === "topic"));
       if (repo) lines.push(`  deactivate ${pid(repo)}`);
       return;
     }
 
     if (step.kind === "topic") {
-      const from = ancestorRepo(index);
-      const consumers = kids.filter((i) => steps[i].kind === "consumer");
-      if (!from) {
-        for (const k of kids) walk(k);
-        return;
-      }
-      const business = consumers.filter((i) => steps[i].detail !== "reply");
-      const replies = consumers.filter((i) => steps[i].detail === "reply");
-      const targets = (business.length ? business : replies)
-        .map((i) => steps[i].repoId)
-        .filter((r): r is string => !!r);
-      const unique = [...new Set(targets)];
-      const label = topicLabel(step.label);
-      const arrow = arrowFor(step.detail);
-      if (unique.length) {
-        for (const to of unique) pushArrow(from, arrow, to, label);
-      } else {
-        pushArrow(from, arrow, "outside", label);
-      }
-      for (const k of kids) walk(k);
+      emitTopic(index);
       return;
     }
 
