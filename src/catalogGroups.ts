@@ -87,3 +87,28 @@ export function apiSurfaceRank(id: ApiSurfaceId): number {
   const i = API_SURFACE_ORDER.indexOf(id);
   return i === -1 ? 99 : i;
 }
+
+/** Preferred order for outbound HTTP dependency sections. */
+const HTTP_SYSTEM_ORDER = [
+  "d03",
+  "sap",
+  "pns",
+  "ikm",
+  "aaf",
+  "gsso",
+  "thanos",
+  "prc",
+  "mpay",
+  "d64",
+  "cms",
+  "email",
+  "ac",
+  "esb-gateway",
+  "openapi-master-data",
+  "http",
+];
+
+export function httpSystemRank(systemId: string): number {
+  const i = HTTP_SYSTEM_ORDER.indexOf(systemId);
+  return i === -1 ? 100 + (systemId.charCodeAt(0) || 0) : i;
+}

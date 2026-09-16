@@ -176,7 +176,7 @@ Hash router (`HashRouter`) so `dist/` works from any static path.
 | `/use-cases`, `/use-cases/:id`       | Business logic catalog; triggers, I/O schemas, publishes, deps, **Mongo create vs query**, **axios calls**, thrown errors |
 | `/schemas`, `/schemas/:id`           | DTO/entity/enum browser; nested expand; used-by; link to Mongo collection when it is a stored document                    |
 | `/database`, `/database/:id`         | Mongo collections as a **database diagram** (table cards, columns, PK/FK); create vs query methods; document fields       |
-| `/dependencies`, `/dependencies/:id` | Outbound **axios** HTTP clients (D03, SAP, PNS, IKM, …); verb + path; use cases that actually call them                   |
+| `/dependencies`, `/dependencies/:id` | Outbound **axios** HTTP clients grouped by system (D03, SAP, PNS, IKM, …); verb + path; use cases that actually call them |
 | `/systems`                           | Downstream blast radius                                                                                                   |
 | `/releases`                          | Commit/tag provenance + how to regenerate                                                                                 |
 
