@@ -170,9 +170,9 @@ Hash router (`HashRouter`) so `dist/` works from any static path.
 | `/guide`                             | **Hand-written** new-joiner mental model (the only prose that is not generated)                                           |
 | `/services`, `/services/:repoId`     | Layer list, who-talks-to-whom matrix, domains, env vars, version                                                          |
 | `/flows`, `/flows/:flowId`           | Filterable catalog; **mermaid sequence** (time order) with axios/Mongo arrows to D03 / LID / Mongo-(owner) / …; hop trace lists the same I/O detail |
-| `/endpoints`, `/endpoints/:id`       | HTTP catalog for the BFFs only; request/response fields; link to flow                                                     |
+| `/endpoints`, `/endpoints/:id`       | HTTP catalog by surface (**Back Office**, **Legacy**, OpenAPI/Warranty, IAM); request/response fields; link to flow       |
 | `/jobs`, `/jobs/:id`                 | Nest Commander **batch jobs**; embedded **sequence + hop trace**, Mongo/axios I/O, topics on the path                     |
-| `/topics`, `/topics/:name`           | Kafka catalog; publishers, consumers, payload schema, family                                                              |
+| `/topics`, `/topics/:name`           | Kafka catalog by namespace (`nlp.pty`, `nlp.bff`, `esb.*`, …); publishers, consumers, payload schema, family                |
 | `/use-cases`, `/use-cases/:id`       | Business logic catalog; triggers, I/O schemas, publishes, deps, **Mongo create vs query**, **axios calls**, thrown errors |
 | `/schemas`, `/schemas/:id`           | DTO/entity/enum browser; nested expand; used-by; link to Mongo collection when it is a stored document                    |
 | `/database`, `/database/:id`         | Mongo collections as a **database diagram** (table cards, columns, PK/FK); create vs query methods; document fields       |

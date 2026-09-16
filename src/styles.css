@@ -434,6 +434,20 @@ pre {
   color: #cfe1ff;
 }
 
+.section-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: -4px 0 18px;
+}
+
+.section-chips .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .table-wrap {
   border: 1px solid var(--border-soft);
   border-radius: var(--radius);

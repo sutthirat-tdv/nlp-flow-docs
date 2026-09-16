@@ -13,6 +13,10 @@ import {
   TopicLink,
   UseCaseLink,
 } from "../components/ui";
+import {
+  topicNamespace,
+  topicNamespaceRank,
+} from "../catalogGroups";
 import { useData } from "../data";
 import type { Topic } from "../types";
 
@@ -24,8 +28,80 @@ const KIND_TONE: Record<Topic["kind"], string | undefined> = {
   unknown: undefined,
 };
 
+const NAMESPACE_BLURB: Record<string, string> = {
+  "nlp.pty": "Loyalty party / TMF658 bus — earn, burn, redeem, member, account",
+  "nlp.bff": "BFF-owned topics — read models, notifications, local orchestration",
+  "nlp.ccm": "Campaign / CCM related NLP topics",
+  "esb.pty": "ESB party topics bridged into the loyalty platform",
+  "esb.prd": "ESB product topics",
+  "esb.ccm": "ESB campaign topics",
+  "sid.cdc": "SID change-data-capture feeds",
+  dsb: "DSB merchant / branch / company commands and events",
+  mfaf: "MFAF notification / device registration",
+  sap: "SAP proxy topics",
+};
+
+function TopicsTable({ topics }: { topics: Topic[] }) {
+  const { indexes } = useData();
+  if (!topics.length) return <Empty>No topics in this section.</Empty>;
+  return (
+    <div className="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Topic</th>
+            <th className="nowrap">Kind</th>
+            <th>Published by</th>
+            <th>Consumed by</th>
+          </tr>
+        </thead>
+        <tbody>
+          {topics.map((topic) => {
+            const consumers = indexes.consumersByTopic.get(topic.name) ?? [];
+            const producers = indexes.useCasesByTopic.get(topic.name) ?? [];
+            return (
+              <tr key={topic.name}>
+                <td>
+                  <TopicLink topic={topic.name} />
+                </td>
+                <td>
+                  <Badge tone={KIND_TONE[topic.kind]}>{topic.kind}</Badge>
+                </td>
+                <td>
+                  <div className="badges">
+                    {[...new Set(producers.map((p) => p.repoId))].map((r) => (
+                      <RepoBadge key={r} repoId={r} />
+                    ))}
+                    {producers.length === 0 ? (
+                      <span className="dimmer" style={{ fontSize: 12 }}>
+                        outside these repos
+                      </span>
+                    ) : null}
+                  </div>
+                </td>
+                <td>
+                  <div className="badges">
+                    {[...new Set(consumers.map((c) => c.repoId))].map((r) => (
+                      <RepoBadge key={r} repoId={r} />
+                    ))}
+                    {consumers.length === 0 ? (
+                      <span className="dimmer" style={{ fontSize: 12 }}>
+                        nobody here
+                      </span>
+                    ) : null}
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export function TopicsPage() {
-  const { core, indexes } = useData();
+  const { core } = useData();
   const [params, setParams] = useSearchParams();
   const [query, setQuery] = useState("");
   const kind = params.get("kind") ?? "all";
@@ -34,26 +110,43 @@ export function TopicsPage() {
   const prefixes = useMemo(() => {
     const counts = new Map<string, number>();
     for (const topic of core.topics) {
-      const key = topic.name.split(".").slice(0, 2).join(".");
+      const key = topicNamespace(topic.name);
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
-    return [...counts.entries()].sort((a, b) => b[1] - a[1]);
+    return [...counts.entries()].sort(
+      (a, b) =>
+        topicNamespaceRank(a[0]) - topicNamespaceRank(b[0]) || b[1] - a[1],
+    );
   }, [core.topics]);
 
-  const topics = useMemo(() => {
+  const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return core.topics
       .filter((t) => (kind === "all" ? true : t.kind === kind))
       .filter((t) =>
-        prefix === "all" ? true : t.name.startsWith(`${prefix}.`),
+        prefix === "all" ? true : topicNamespace(t.name) === prefix,
       )
       .filter((t) =>
         needle
           ? t.name.toLowerCase().includes(needle) ||
             t.aliases.some((a) => a.member.toLowerCase().includes(needle))
           : true,
-      );
+      )
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [core.topics, kind, prefix, query]);
+
+  const sections = useMemo(() => {
+    const byNs = new Map<string, Topic[]>();
+    for (const topic of filtered) {
+      const ns = topicNamespace(topic.name);
+      const list = byNs.get(ns) ?? [];
+      list.push(topic);
+      byNs.set(ns, list);
+    }
+    return [...byNs.entries()].sort(
+      (a, b) => topicNamespaceRank(a[0]) - topicNamespaceRank(b[0]),
+    );
+  }, [filtered]);
 
   const setParam = (key: string, value: string) => {
     const next = new URLSearchParams(params);
@@ -65,11 +158,11 @@ export function TopicsPage() {
   return (
     <>
       <PageHead title="Kafka topics">
-        The wiring between the four services. Only topics something here
-        publishes or consumes are listed — enum leftovers with no producer and
-        no consumer are omitted. Commands are requests, events are the
-        past-tense answers, and the <code>Failed</code> variants carry the error
-        path.
+        Grouped by bus namespace — <code>nlp.pty</code>, <code>nlp.bff</code>,{" "}
+        <code>esb.*</code>, <code>sid.cdc</code>, and the rest. Only topics
+        something here publishes or consumes are listed. Commands are requests,
+        events are past-tense answers, and <code>Failed</code> variants carry
+        the error path.
       </PageHead>
 
       <div className="toolbar">
@@ -96,7 +189,7 @@ export function TopicsPage() {
           value={prefix}
           onChange={(e) => setParam("prefix", e.target.value)}
         >
-          <option value="all">Any namespace</option>
+          <option value="all">All namespaces</option>
           {prefixes.map(([p, count]) => (
             <option key={p} value={p}>
               {p}.* ({count})
@@ -104,68 +197,51 @@ export function TopicsPage() {
           ))}
         </select>
         <span className="dimmer" style={{ fontSize: 12.5, marginLeft: "auto" }}>
-          {topics.length.toLocaleString()} of{" "}
+          {filtered.length.toLocaleString()} of{" "}
           {core.topics.length.toLocaleString()}
         </span>
       </div>
 
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Topic</th>
-              <th className="nowrap">Kind</th>
-              <th>Published by</th>
-              <th>Consumed by</th>
-            </tr>
-          </thead>
-          <tbody>
-            {topics.slice(0, 400).map((topic) => {
-              const consumers = indexes.consumersByTopic.get(topic.name) ?? [];
-              const producers = indexes.useCasesByTopic.get(topic.name) ?? [];
-              return (
-                <tr key={topic.name}>
-                  <td>
-                    <TopicLink topic={topic.name} />
-                  </td>
-                  <td>
-                    <Badge tone={KIND_TONE[topic.kind]}>{topic.kind}</Badge>
-                  </td>
-                  <td>
-                    <div className="badges">
-                      {[...new Set(producers.map((p) => p.repoId))].map((r) => (
-                        <RepoBadge key={r} repoId={r} />
-                      ))}
-                      {producers.length === 0 ? (
-                        <span className="dimmer" style={{ fontSize: 12 }}>
-                          outside these repos
-                        </span>
-                      ) : null}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="badges">
-                      {[...new Set(consumers.map((c) => c.repoId))].map((r) => (
-                        <RepoBadge key={r} repoId={r} />
-                      ))}
-                      {consumers.length === 0 ? (
-                        <span className="dimmer" style={{ fontSize: 12 }}>
-                          nobody here
-                        </span>
-                      ) : null}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <div className="section-chips">
+        <button
+          type="button"
+          className={`chip${prefix === "all" ? " active" : ""}`}
+          onClick={() => setParam("prefix", "all")}
+        >
+          All
+        </button>
+        {prefixes.map(([p, count]) => (
+          <button
+            key={p}
+            type="button"
+            className={`chip${prefix === p ? " active" : ""}`}
+            onClick={() => setParam("prefix", p)}
+          >
+            <span className="mono">{p}</span>
+            <span className="dimmer">{count}</span>
+          </button>
+        ))}
       </div>
-      {topics.length > 400 ? (
-        <p className="dimmer" style={{ fontSize: 12.5 }}>
-          Showing the first 400 of {topics.length.toLocaleString()}.
-        </p>
-      ) : null}
+
+      {!sections.length ? (
+        <Empty>No topics match this filter.</Empty>
+      ) : (
+        sections.map(([ns, topics]) => (
+          <Section
+            key={ns}
+            title={<span className="mono">{ns}.*</span>}
+            subtitle={
+              NAMESPACE_BLURB[ns] ??
+              `${topics.length} topic${topics.length === 1 ? "" : "s"}`
+            }
+            actions={
+              <span className="dimmer">{topics.length.toLocaleString()}</span>
+            }
+          >
+            <TopicsTable topics={topics} />
+          </Section>
+        ))
+      )}
     </>
   );
 }
@@ -186,6 +262,7 @@ export function TopicDetailPage() {
   const consumers = indexes.consumersByTopic.get(topic.name) ?? [];
   const producers = indexes.useCasesByTopic.get(topic.name) ?? [];
   const flow = indexes.flowByEntry.get(topic.name);
+  const ns = topicNamespace(topic.name);
 
   // Sibling topics from the same command family, e.g. the success and failure
   // answers that go with a command.
@@ -205,7 +282,10 @@ export function TopicDetailPage() {
         crumbs={
           <>
             <Link to="/topics">Kafka topics</Link> <span>/</span>{" "}
-            <span>{topic.kind}</span>
+            <Link to={`/topics?prefix=${encodeURIComponent(ns)}`}>
+              <span className="mono">{ns}</span>
+            </Link>{" "}
+            <span>/</span> <span>{topic.kind}</span>
           </>
         }
       >
@@ -217,6 +297,7 @@ export function TopicDetailPage() {
       <div className="card">
         <KeyValue
           rows={[
+            ["Namespace", <span className="mono">{ns}</span>],
             ["Kind", <Badge tone={KIND_TONE[topic.kind]}>{topic.kind}</Badge>],
             [
               "Command family",

@@ -12,94 +12,28 @@ import {
   SourceLink,
   UseCaseLink,
 } from "../components/ui";
+import {
+  apiSurface,
+  apiSurfaceRank,
+  type ApiSurfaceId,
+} from "../catalogGroups";
 import { useData, useSchema } from "../data";
 import { endpointHref, isBatchJob } from "../entryLinks";
+import type { Endpoint } from "../types";
 
-export function EndpointsPage() {
-  const { core } = useData();
-  const [params, setParams] = useSearchParams();
-  const [query, setQuery] = useState("");
-  const repo = params.get("repo") ?? "all";
-  const method = params.get("method") ?? "all";
+const SURFACE_BLURB: Record<ApiSurfaceId, string> = {
+  backoffice: "Console /api/v1 routes on Back Office BFF",
+  legacy: "Partner /legacy-api/v1 routes on OpenAPI BFF",
+  openapi: "Warranty and newer /api/v1 routes on OpenAPI BFF",
+  iam: "IAM user management routes on OpenAPI BFF",
+  other: "Health checks and uncategorized HTTP",
+};
 
-  const httpEndpoints = useMemo(
-    () => core.endpoints.filter((e) => !isBatchJob(e.method)),
-    [core.endpoints],
-  );
-
-  const endpoints = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    return httpEndpoints
-      .filter((e) => (repo === "all" ? true : e.repoId === repo))
-      .filter((e) => (method === "all" ? true : e.method === method))
-      .filter((e) =>
-        needle
-          ? e.path.toLowerCase().includes(needle) ||
-            (e.summary ?? "").toLowerCase().includes(needle) ||
-            e.controller.toLowerCase().includes(needle) ||
-            e.tags.some((t) => t.toLowerCase().includes(needle))
-          : true,
-      );
-  }, [httpEndpoints, repo, method, query]);
-
-  const setParam = (key: string, value: string) => {
-    const next = new URLSearchParams(params);
-    if (value === "all") next.delete(key);
-    else next.set(key, value);
-    setParams(next, { replace: true });
-  };
-
+function EndpointsTable({ endpoints }: { endpoints: Endpoint[] }) {
+  if (!endpoints.length) return <Empty>No endpoints in this section.</Empty>;
+  const shown = endpoints.slice(0, 400);
   return (
     <>
-      <PageHead title="API endpoints">
-        Every HTTP route the two BFFs expose, with the guard that protects it,
-        the permission it needs, the request and response schema, and the use
-        case behind it. Paths already include the global prefix and version, so
-        they are the real URLs. Scheduled Nest Commander jobs live under{" "}
-        <Link to="/jobs">Batch jobs</Link>.
-      </PageHead>
-
-      <div className="toolbar">
-        <input
-          className="input input--grow"
-          placeholder="Filter by path, summary, controller or tag…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        <select
-          className="select"
-          value={repo}
-          onChange={(e) => setParam("repo", e.target.value)}
-        >
-          <option value="all">Both BFFs</option>
-          {core.repos
-            .filter((r) =>
-              httpEndpoints.some((e) => e.repoId === r.id),
-            )
-            .map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.title}
-              </option>
-            ))}
-        </select>
-        <select
-          className="select"
-          value={method}
-          onChange={(e) => setParam("method", e.target.value)}
-        >
-          <option value="all">Any method</option>
-          {["GET", "POST", "PUT", "PATCH", "DELETE"].map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          ))}
-        </select>
-        <span className="dimmer" style={{ fontSize: 12.5, marginLeft: "auto" }}>
-          {endpoints.length.toLocaleString()} of{" "}
-          {httpEndpoints.length.toLocaleString()}
-        </span>
-      </div>
-
       <div className="table-wrap">
         <table>
           <thead>
@@ -112,16 +46,13 @@ export function EndpointsPage() {
             </tr>
           </thead>
           <tbody>
-            {endpoints.slice(0, 400).map((endpoint) => (
+            {shown.map((endpoint) => (
               <tr key={endpoint.id}>
                 <td>
                   <Badge tone={endpoint.method}>{endpoint.method}</Badge>
                 </td>
                 <td>
-                  <Link
-                    className="mono"
-                    to={endpointHref(endpoint)}
-                  >
+                  <Link className="mono" to={endpointHref(endpoint)}>
                     {endpoint.path}
                   </Link>
                 </td>
@@ -148,6 +79,161 @@ export function EndpointsPage() {
           Showing the first 400 of {endpoints.length.toLocaleString()}.
         </p>
       ) : null}
+    </>
+  );
+}
+
+export function EndpointsPage() {
+  const { core } = useData();
+  const [params, setParams] = useSearchParams();
+  const [query, setQuery] = useState("");
+  const surface = (params.get("surface") ?? "all") as ApiSurfaceId | "all";
+  const method = params.get("method") ?? "all";
+
+  const httpEndpoints = useMemo(
+    () => core.endpoints.filter((e) => !isBatchJob(e.method)),
+    [core.endpoints],
+  );
+
+  const surfaces = useMemo(() => {
+    const counts = new Map<ApiSurfaceId, { label: string; count: number }>();
+    for (const endpoint of httpEndpoints) {
+      const { id, label } = apiSurface(endpoint);
+      const prev = counts.get(id);
+      counts.set(id, { label, count: (prev?.count ?? 0) + 1 });
+    }
+    return [...counts.entries()]
+      .map(([id, meta]) => ({ id, ...meta }))
+      .sort((a, b) => apiSurfaceRank(a.id) - apiSurfaceRank(b.id));
+  }, [httpEndpoints]);
+
+  const filtered = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return httpEndpoints
+      .filter((e) =>
+        surface === "all" ? true : apiSurface(e).id === surface,
+      )
+      .filter((e) => (method === "all" ? true : e.method === method))
+      .filter((e) =>
+        needle
+          ? e.path.toLowerCase().includes(needle) ||
+            (e.summary ?? "").toLowerCase().includes(needle) ||
+            e.controller.toLowerCase().includes(needle) ||
+            e.tags.some((t) => t.toLowerCase().includes(needle))
+          : true,
+      )
+      .sort(
+        (a, b) =>
+          a.path.localeCompare(b.path) || a.method.localeCompare(b.method),
+      );
+  }, [httpEndpoints, surface, method, query]);
+
+  const sections = useMemo(() => {
+    const bySurface = new Map<
+      ApiSurfaceId,
+      { label: string; endpoints: Endpoint[] }
+    >();
+    for (const endpoint of filtered) {
+      const { id, label } = apiSurface(endpoint);
+      const bucket = bySurface.get(id) ?? { label, endpoints: [] };
+      bucket.endpoints.push(endpoint);
+      bySurface.set(id, bucket);
+    }
+    return [...bySurface.entries()].sort(
+      (a, b) => apiSurfaceRank(a[0]) - apiSurfaceRank(b[0]),
+    );
+  }, [filtered]);
+
+  const setParam = (key: string, value: string) => {
+    const next = new URLSearchParams(params);
+    if (value === "all") next.delete(key);
+    else next.set(key, value);
+    setParams(next, { replace: true });
+  };
+
+  return (
+    <>
+      <PageHead title="API endpoints">
+        Grouped by surface — Back Office <code>/api/v1</code>, Legacy{" "}
+        <code>/legacy-api/v1</code>, OpenAPI / Warranty, and IAM. Paths already
+        include the global prefix and version. Scheduled Nest Commander jobs
+        live under <Link to="/jobs">Batch jobs</Link>.
+      </PageHead>
+
+      <div className="toolbar">
+        <input
+          className="input input--grow"
+          placeholder="Filter by path, summary, controller or tag…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <select
+          className="select"
+          value={surface}
+          onChange={(e) => setParam("surface", e.target.value)}
+        >
+          <option value="all">All surfaces</option>
+          {surfaces.map(({ id, label, count }) => (
+            <option key={id} value={id}>
+              {label} ({count})
+            </option>
+          ))}
+        </select>
+        <select
+          className="select"
+          value={method}
+          onChange={(e) => setParam("method", e.target.value)}
+        >
+          <option value="all">Any method</option>
+          {["GET", "POST", "PUT", "PATCH", "DELETE"].map((m) => (
+            <option key={m} value={m}>
+              {m}
+            </option>
+          ))}
+        </select>
+        <span className="dimmer" style={{ fontSize: 12.5, marginLeft: "auto" }}>
+          {filtered.length.toLocaleString()} of{" "}
+          {httpEndpoints.length.toLocaleString()}
+        </span>
+      </div>
+
+      <div className="section-chips">
+        <button
+          type="button"
+          className={`chip${surface === "all" ? " active" : ""}`}
+          onClick={() => setParam("surface", "all")}
+        >
+          All
+        </button>
+        {surfaces.map(({ id, label, count }) => (
+          <button
+            key={id}
+            type="button"
+            className={`chip${surface === id ? " active" : ""}`}
+            onClick={() => setParam("surface", id)}
+          >
+            {label}
+            <span className="dimmer">{count}</span>
+          </button>
+        ))}
+      </div>
+
+      {!sections.length ? (
+        <Empty>No endpoints match this filter.</Empty>
+      ) : (
+        sections.map(([id, { label, endpoints }]) => (
+          <Section
+            key={id}
+            title={label}
+            subtitle={SURFACE_BLURB[id]}
+            actions={
+              <span className="dimmer">{endpoints.length.toLocaleString()}</span>
+            }
+          >
+            <EndpointsTable endpoints={endpoints} />
+          </Section>
+        ))
+      )}
     </>
   );
 }
@@ -216,6 +302,7 @@ export function EndpointDetailPage() {
 
   const flow = indexes.flowByEntry.get(endpoint.id);
   const repo = indexes.repoById.get(endpoint.repoId);
+  const surface = apiSurface(endpoint);
 
   return (
     <>
@@ -231,6 +318,8 @@ export function EndpointDetailPage() {
         crumbs={
           <>
             <Link to="/endpoints">API endpoints</Link> <span>/</span>{" "}
+            <Link to={`/endpoints?surface=${surface.id}`}>{surface.label}</Link>{" "}
+            <span>/</span>{" "}
             <Link to={`/services/${endpoint.repoId}`}>{repo?.title}</Link>{" "}
             <span>/</span> <span className="mono">{endpoint.domain}</span>
           </>
