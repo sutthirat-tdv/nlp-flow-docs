@@ -18,6 +18,13 @@ export function ServicesPage() {
   const { core } = useData();
   const repos = core.repos.slice().sort((a, b) => a.layer - b.layer);
 
+  const layers: { layer: number; repos: typeof repos }[] = [];
+  for (const repo of repos) {
+    const group = layers[layers.length - 1];
+    if (group && group.layer === repo.layer) group.repos.push(repo);
+    else layers.push({ layer: repo.layer, repos: [repo] });
+  }
+
   return (
     <>
       <PageHead title="Services">
@@ -27,46 +34,59 @@ export function ServicesPage() {
       </PageHead>
 
       <div className="layer-rail">
-        {repos.map((repo) => (
-          <div key={repo.id} className="layer-row">
-            <div className="layer-row__num">{repo.layer}</div>
-            <Link to={`/services/${repo.id}`} className="repo-card">
-              <div className="badges" style={{ marginBottom: 6 }}>
-                <Badge tone="accent">{repo.tag}</Badge>
-              </div>
-              <div className="repo-card__title">{repo.title}</div>
-              <div className="repo-card__name">
-                {repo.name} · {repo.branch} @ {repo.commit.shortSha} ·{" "}
-                {repo.commit.date.slice(0, 10)}
-              </div>
-              <div className="repo-card__summary">{repo.summary}</div>
-              <div className="badges">
-                <Badge tone="accent">{repo.role}</Badge>
-                {repo.id === "cronjob" && repo.stats.endpoints ? (
-                  <Badge>{repo.stats.endpoints} batch jobs</Badge>
-                ) : repo.stats.endpoints ? (
-                  <Badge>{repo.stats.endpoints} endpoints</Badge>
-                ) : (
-                  <Badge tone="amber">no HTTP surface</Badge>
-                )}
-                <Badge>{repo.stats.useCases} use cases</Badge>
-                <Badge>{repo.stats.consumers} Kafka consumers</Badge>
-                <Badge>{repo.stats.schemas} schemas</Badge>
-                {repo.stats.collections ? (
-                  <Badge tone="green">
-                    {repo.stats.collections} collections
-                  </Badge>
-                ) : null}
-                {repo.stats.httpClients ? (
-                  <Badge tone="teal">
-                    {repo.stats.httpClients} HTTP clients
-                  </Badge>
-                ) : null}
-                {repo.packageVersion ? (
-                  <Badge tone="purple">v{repo.packageVersion}</Badge>
-                ) : null}
-              </div>
-            </Link>
+        {layers.map((group) => (
+          <div key={group.layer} className="layer-row">
+            <div className="layer-row__num" title={`Layer ${group.layer}`}>
+              {group.layer}
+            </div>
+            <div
+              className="layer-row__cards"
+              data-count={Math.min(group.repos.length, 3)}
+            >
+              {group.repos.map((repo) => (
+                <Link
+                  key={repo.id}
+                  to={`/services/${repo.id}`}
+                  className="repo-card"
+                >
+                  <div className="badges" style={{ marginBottom: 6 }}>
+                    <Badge tone="accent">{repo.tag}</Badge>
+                  </div>
+                  <div className="repo-card__title">{repo.title}</div>
+                  <div className="repo-card__name">
+                    {repo.name} · {repo.branch} @ {repo.commit.shortSha} ·{" "}
+                    {repo.commit.date.slice(0, 10)}
+                  </div>
+                  <div className="repo-card__summary">{repo.summary}</div>
+                  <div className="badges">
+                    <Badge tone="accent">{repo.role}</Badge>
+                    {repo.id === "cronjob" && repo.stats.endpoints ? (
+                      <Badge>{repo.stats.endpoints} batch jobs</Badge>
+                    ) : repo.stats.endpoints ? (
+                      <Badge>{repo.stats.endpoints} endpoints</Badge>
+                    ) : (
+                      <Badge tone="amber">no HTTP surface</Badge>
+                    )}
+                    <Badge>{repo.stats.useCases} use cases</Badge>
+                    <Badge>{repo.stats.consumers} Kafka consumers</Badge>
+                    <Badge>{repo.stats.schemas} schemas</Badge>
+                    {repo.stats.collections ? (
+                      <Badge tone="green">
+                        {repo.stats.collections} collections
+                      </Badge>
+                    ) : null}
+                    {repo.stats.httpClients ? (
+                      <Badge tone="teal">
+                        {repo.stats.httpClients} HTTP clients
+                      </Badge>
+                    ) : null}
+                    {repo.packageVersion ? (
+                      <Badge tone="purple">v{repo.packageVersion}</Badge>
+                    ) : null}
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
         ))}
       </div>

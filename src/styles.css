@@ -1334,6 +1334,29 @@ tbody tr:hover {
   font-size: 13px;
 }
 
+.layer-row__cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+/* Repos that share a layer (parallel entry points, not sequential steps)
+   sit side by side under one layer marker instead of stacking. */
+.layer-row__cards[data-count="2"] {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.layer-row__cards[data-count="3"] {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 860px) {
+  .layer-row__cards[data-count="2"],
+  .layer-row__cards[data-count="3"] {
+    grid-template-columns: 1fr;
+  }
+}
+
 .repo-card {
   display: block;
   background: var(--bg-raised);
