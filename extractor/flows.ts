@@ -17,7 +17,7 @@ import {
   Topic,
   UseCase,
 } from "./model.js";
-import { SYSTEM_SHORT, toSequence } from "./sequence.js";
+import { COARSE_TOUCH_LABEL, SYSTEM_SHORT, toSequence } from "./sequence.js";
 
 const MAX_DEPTH = 7;
 const MAX_STEPS = 70;
@@ -209,7 +209,7 @@ export function buildFlows(input: GraphInput): Flow[] {
             input.systemTitles.get(system) ??
             SYSTEM_SHORT[system] ??
             system,
-          detail: showUses ? "uses" : undefined,
+          detail: showUses ? COARSE_TOUCH_LABEL : undefined,
           parent: index,
         });
       }

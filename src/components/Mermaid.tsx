@@ -49,14 +49,14 @@ async function getMermaid() {
             useMaxWidth: true,
           },
           sequence: {
-            actorMargin: 48,
-            messageMargin: 16,
+            actorMargin: 56,
+            messageMargin: 20,
             boxMargin: 6,
             noteMargin: 8,
             mirrorActors: false,
             useMaxWidth: true,
             wrap: true,
-            width: 130,
+            width: 170,
           },
           er: {
             useMaxWidth: true,

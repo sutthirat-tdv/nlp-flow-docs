@@ -21,10 +21,14 @@ export function FlowSequence({ steps }: { steps: FlowStep[] }) {
   return (
     <div className="flow-sequence">
       <p className="flow-sequence__legend dimmer">
-        Numbered left to right over time. Solid arrow = call / command · dashed
-        = reply / event · ✕ = failure. Red bordered frames mark failure paths;
-        amber/opt frames mark conditional or unconsumed publishes. Notes name
-        the use case. Arrows to Mongo / D03 / LID show axios or database calls.
+        Numbered left to right over time. Solid filled arrow = call / command
+        · dashed filled = reply / event · ✕ = failure · dashed open arrow = a
+        system the code touches but no concrete call/query could be attributed
+        (ctor-only dependency, not axios/Mongo). Red bordered frames mark
+        failure paths; amber/opt frames mark conditional or unconsumed
+        publishes. Notes name the use case — consecutive notes on one lifeline
+        with no bar break are sibling handlers of the same hop, not separate
+        calls. Arrows to Mongo / D03 / LID show axios or database calls.
         Publishes nobody here consumes go to Outside.
       </p>
       <Mermaid chart={chart} scroll />

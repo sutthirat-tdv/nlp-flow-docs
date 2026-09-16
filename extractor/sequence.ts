@@ -65,6 +65,15 @@ const FAILURE_RECT = "rgba(140, 48, 48, 0.28)";
 /** Soft amber wash behind optional / conditional steps. */
 const CONDITION_RECT = "rgba(140, 110, 40, 0.22)";
 
+/**
+ * Shared label for a ctor-only `systems[]` touch that collectionAccess /
+ * httpAccess could not attribute to a concrete call. flows.ts stamps this
+ * exact string on the step so the renderer can tell a confirmed op
+ * ("read loyaltyAccount", "GET /product") from a coarse, unresolved one and
+ * draw it with a visibly different arrow.
+ */
+export const COARSE_TOUCH_LABEL = "touches";
+
 function pid(raw: string): string {
   const cleaned = raw.replace(/[^a-zA-Z0-9]/g, "_") || "x";
   return /^[0-9]/.test(cleaned) ? `p_${cleaned}` : cleaned;
@@ -75,7 +84,7 @@ function msg(text: string): string {
     .replace(/["#;:]/g, " ")
     .replace(/\s+/g, " ")
     .trim()
-    .slice(0, 96);
+    .slice(0, 110);
 }
 
 function topicLabel(name: string): string {
@@ -90,11 +99,16 @@ function topicLabel(name: string): string {
   return name.split(".").pop() ?? name;
 }
 
+/** `:id` route params survive `msg()`'s `:` strip by becoming `{id}` first. */
+function withBracedParams(path: string): string {
+  return path.replace(/:([A-Za-z0-9_]+)/g, "{$1}");
+}
+
 function httpLabel(label: string): string {
   const match = label.match(/^(GET|POST|PUT|PATCH|DELETE)\s+(\S+)/i);
-  if (!match) return label;
+  if (!match) return withBracedParams(label);
   const parts = match[2].split("/").filter(Boolean);
-  const tail = parts.slice(-3).join("/");
+  const tail = withBracedParams(parts.slice(-3).join("/"));
   return `${match[1].toUpperCase()} /${tail}`;
 }
 
@@ -138,6 +152,36 @@ function systemParticipantLabel(
     step.label ??
     step.id
   );
+}
+
+/**
+ * Sibling use cases on the same topic (a topic with several handlers in one
+ * service — e.g. ApplyLoyaltyEvent fanning out to registration / mission /
+ * generic rules) each get their own activate/Note/deactivate block, which
+ * renders as several short, choppy bars back to back on the same lifeline.
+ * When a `deactivate X` is immediately followed by `activate X` with nothing
+ * in between, they are the same hop split across handlers — merge them into
+ * one continuous bar so the Notes read as steps within one visit instead of
+ * separate calls.
+ */
+function mergeAdjacentActivations(lines: string[]): string[] {
+  const out: string[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const deactivateMatch = lines[i].match(/^ {2}deactivate (\S+)$/);
+    const activateMatch = lines[i + 1]?.match(/^ {2}activate (\S+)$/);
+    if (
+      deactivateMatch &&
+      activateMatch &&
+      deactivateMatch[1] === activateMatch[1]
+    ) {
+      i += 2;
+      continue;
+    }
+    out.push(lines[i]);
+    i += 1;
+  }
+  return out;
 }
 
 export function toSequence(steps: FlowStep[], input: SequenceInput): string {
@@ -223,7 +267,7 @@ export function toSequence(steps: FlowStep[], input: SequenceInput): string {
   if (hasDeadEnd) remember("outside", "Outside");
 
   const lines: string[] = [
-    "%%{init: {'sequence': {'useMaxWidth': false, 'wrap': true, 'mirrorActors': false, 'actorMargin': 56, 'width': 150, 'messageMargin': 18}}}%%",
+    "%%{init: {'sequence': {'useMaxWidth': false, 'wrap': true, 'mirrorActors': false, 'actorMargin': 56, 'width': 170, 'messageMargin': 20}}}%%",
     "sequenceDiagram",
     "  autonumber",
     ...declare,
@@ -351,7 +395,12 @@ export function toSequence(steps: FlowStep[], input: SequenceInput): string {
         const label = sys.detail?.trim();
         if (!repo || !label) continue;
         const to = systemParticipantKey(sys);
-        pushArrow(repo, "->>", to, label);
+        // Confirmed reads/writes/calls get a solid filled arrow; a bare
+        // ctor-only touch that collectionAccess/httpAccess could not pin
+        // down gets a dashed open one so the diagram doesn't overstate
+        // certainty about what actually happened.
+        const arrow = label === COARSE_TOUCH_LABEL ? "--)" : "->>";
+        pushArrow(repo, arrow, to, label);
       }
       emitTopicKids(kids.filter((i) => steps[i].kind === "topic"));
       if (repo) lines.push(`  deactivate ${pid(repo)}`);
@@ -369,5 +418,5 @@ export function toSequence(steps: FlowStep[], input: SequenceInput): string {
   };
 
   walk(0);
-  return lines.join("\n");
+  return mergeAdjacentActivations(lines).join("\n");
 }
