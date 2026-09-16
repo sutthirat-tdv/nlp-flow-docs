@@ -146,6 +146,8 @@ Then `npm run update`. The site's Releases page already lists recent tags per re
 
 8. **nlp-cronjob** is a fifth repo. Nest Commander `@Command` classes are catalogued as `CRON /jobs/<name>` endpoints. Jobs use the same use-case / axios / Mongo extractors. Do not skip `origin/sit` for it.
 
+9. **Drop `_developer` surfaces from every catalog.** Seed/debug `DeveloperController` / `DevelopEventConsumerController`, `/_developer/` modules, `_developer*` files, and `_test-ac` are not product APIs. Skip them at file walk so endpoints, consumers, CRON jobs, use cases, schemas, collections, and HTTP clients never include them.
+
 ### Known remaining accuracy issues
 
 - `ApplyLoyaltyEvent` in tmf658 has several handlers on the same topic; the walk fans out to all of them (registration rule, mission earn, generic apply). That is structurally true but noisy on some diagrams.

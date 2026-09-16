@@ -214,7 +214,7 @@ export function GuidePage() {
           </li>
         </ul>
 
-        <h2>5. Three things that will confuse you</h2>
+        <h2>5. Things that will confuse you</h2>
         <ol>
           <li>
             <strong>The same class name exists in several repos.</strong>{" "}
@@ -237,6 +237,15 @@ export function GuidePage() {
             outcome with its own consumers and its own follow-up logic, such as
             releasing a reserved quota. When tracing a bug, follow the failure
             leg as seriously as the happy path.
+          </li>
+          <li>
+            <strong>
+              Seed and debug controllers are not in this catalog.
+            </strong>{" "}
+            Each BFF has a <code>_developer</code> module (and TMF658 has{" "}
+            <code>DevelopEventConsumerController</code>) used for seeding and
+            sit-only experiments. Those files still exist in the repos; this
+            site omits them so the maps stay product APIs.
           </li>
         </ol>
 
@@ -331,6 +340,10 @@ export function GuidePage() {
             <li>
               A wired consumer may still not be running — check{" "}
               <code>CONSUMER_TYPE</code>.
+            </li>
+            <li>
+              <code>_developer</code> seed/debug controllers are omitted from
+              every catalog.
             </li>
           </ul>
         </div>

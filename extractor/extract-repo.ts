@@ -380,6 +380,23 @@ function isUseCaseFile(file: string): boolean {
   );
 }
 
+/**
+ * Seed/debug tooling (`_developer` modules, Develop*Controller, `_test-ac`).
+ * These are not product APIs and must not appear in any catalog.
+ */
+function isDeveloperSurface(rel: string, className?: string): boolean {
+  if (/(?:^|\/)_developer(?:\/|-|\.)/.test(rel)) return true;
+  if (/(?:^|\/)_test-ac[./]/.test(rel)) return true;
+  if (
+    className &&
+    /^(Develop|Developer)/.test(className) &&
+    /Controller$/.test(className)
+  ) {
+    return true;
+  }
+  return false;
+}
+
 export function extractRepo(
   config: DocsConfig,
   repo: RepoConfig,
@@ -389,7 +406,10 @@ export function extractRepo(
   const srcRoot = resolve(snapshotRoot);
   const files = walkFiles(
     srcRoot,
-    (rel) => rel.startsWith("src/") && rel.endsWith(".ts"),
+    (rel) =>
+      rel.startsWith("src/") &&
+      rel.endsWith(".ts") &&
+      !isDeveloperSurface(rel),
   );
   const parsedCache = new Map<string, ParsedFile>();
   const parse = (rel: string): ParsedFile => {
@@ -873,6 +893,7 @@ export function extractRepo(
   for (const rel of controllerFiles) {
     const file = parse(rel);
     for (const cls of exportedClasses(file)) {
+      if (isDeveloperSurface(rel, cls.name?.text)) continue;
       const controllerDecorator = findDecorator(cls, file, "Controller");
       if (!controllerDecorator) continue;
       const arg = controllerDecorator.args[0] ?? "";
@@ -888,6 +909,12 @@ export function extractRepo(
         findDecorator(cls, file, "ApiTags")
           ?.args.map((a) => a.replace(/['"`]/g, ""))
           .filter(Boolean) ?? [];
+      if (
+        /(?:^|\/)_developer(?:\/|$)/.test(basePath) ||
+        tags.some((t) => t === "_developer" || t.startsWith("_developer/"))
+      ) {
+        continue;
+      }
       const classGuards =
         findDecorator(cls, file, "UseGuards")?.args.map((a) =>
           a.replace(/\(.*\)/, ""),
@@ -914,6 +941,7 @@ export function extractRepo(
             /\/+/g,
             "/",
           );
+        if (/\/_developer(?:\/|$)/.test(fullPath)) continue;
         const handler = methodName(method, file);
         const methodText = textOf(file, method);
 
@@ -1031,10 +1059,7 @@ export function extractRepo(
 
   // ------------------------------------------------------------- cron commands
   const commandFiles = files.filter(
-    (f) =>
-      /\.command\.ts$/.test(f) &&
-      !/\.spec\.ts$/.test(f) &&
-      !/\/_developer\//.test(f),
+    (f) => /\.command\.ts$/.test(f) && !/\.spec\.ts$/.test(f),
   );
   for (const rel of commandFiles) {
     const file = parse(rel);
@@ -1170,6 +1195,7 @@ export function extractRepo(
     )
       continue;
     for (const cls of exportedClasses(file)) {
+      if (isDeveloperSurface(rel, cls.name?.text)) continue;
       const ctorDeps = constructorParams(cls, file);
       for (const method of methodsOf(cls)) {
         const decorators = getDecorators(method, file);
