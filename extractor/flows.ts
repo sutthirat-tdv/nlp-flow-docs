@@ -7,17 +7,38 @@
  * its use case -> ... until it runs out of edges, hits a downstream system, or
  * hits the depth budget.
  */
-import { Consumer, Endpoint, Flow, FlowStep, Topic, UseCase } from "./model.js";
-import { toSequence } from "./sequence.js";
+import {
+  Consumer,
+  Endpoint,
+  Flow,
+  FlowStep,
+  HttpClient,
+  MongoCollection,
+  Topic,
+  UseCase,
+} from "./model.js";
+import { SYSTEM_SHORT, toSequence } from "./sequence.js";
 
 const MAX_DEPTH = 7;
 const MAX_STEPS = 70;
+/** Cap concrete axios/Mongo arrows under one use case so diagrams stay readable. */
+const MAX_IO_PER_USE_CASE = 8;
+
+const SHORT_REPO: Record<string, string> = {
+  "openapi-bff": "OpenAPI",
+  "backoffice-bff": "BackOffice",
+  "agg-common": "Aggregator",
+  tmf658: "TMF658",
+  cronjob: "Cronjob",
+};
 
 export interface GraphInput {
   endpoints: Endpoint[];
   consumers: Consumer[];
   useCases: UseCase[];
   topics: Topic[];
+  collections: MongoCollection[];
+  httpClients: HttpClient[];
   repoTitles: Map<string, string>;
   systemTitles: Map<string, string>;
 }
@@ -37,13 +58,34 @@ function push(
   step: Omit<FlowStep, "depth"> & { depth: number },
 ): number {
   w.steps.push(step);
-  if (step.repoId) w.repos.add(step.repoId);
+  // System steps may carry an owning-repo id (which Mongo DB) without meaning
+  // that repo executed code in this hop.
+  if (step.repoId && step.kind !== "system") w.repos.add(step.repoId);
   return w.steps.length - 1;
+}
+
+function shortenPath(path: string): string {
+  const parts = path.split("/").filter(Boolean);
+  const joined =
+    parts.length <= 3 ? path.replace(/^\//, "") : parts.slice(-3).join("/");
+  // Mermaid sequence messages cannot contain `:`, so keep params as {id}.
+  return joined.replace(/:([A-Za-z0-9_]+)/g, "{$1}");
+}
+
+function kindSummary(
+  kinds: string[],
+): string {
+  const order = ["create", "read", "update", "upsert", "delete", "other"];
+  const unique = [...new Set(kinds)];
+  unique.sort((a, b) => order.indexOf(a) - order.indexOf(b));
+  return unique.join("/");
 }
 
 export function buildFlows(input: GraphInput): Flow[] {
   const { endpoints, consumers, useCases, topics } = input;
   const useCaseById = new Map(useCases.map((u) => [u.id, u]));
+  const collectionById = new Map(input.collections.map((c) => [c.id, c]));
+  const httpClientById = new Map(input.httpClients.map((c) => [c.id, c]));
   const consumersByTopic = new Map<string, Consumer[]>();
   for (const c of consumers) {
     const list = consumersByTopic.get(c.topic) ?? [];
@@ -51,6 +93,30 @@ export function buildFlows(input: GraphInput): Flow[] {
     consumersByTopic.set(c.topic, list);
   }
   const topicByName = new Map(topics.map((t) => [t.name, t]));
+
+  const pushSystemIo = (
+    w: Walker,
+    parent: number,
+    depth: number,
+    step: {
+      systemId: string;
+      ownerRepoId: string | null;
+      label: string;
+      detail: string;
+    },
+  ) => {
+    if (w.steps.length >= MAX_STEPS) return;
+    w.systems.add(step.systemId);
+    push(w, {
+      depth,
+      kind: "system",
+      id: step.systemId,
+      repoId: step.ownerRepoId,
+      label: step.label,
+      detail: step.detail,
+      parent,
+    });
+  };
 
   const walkUseCase = (
     w: Walker,
@@ -75,16 +141,75 @@ export function buildFlows(input: GraphInput): Flow[] {
       parent,
     });
 
+    const covered = new Set<string>();
+    let ioCount = 0;
+
+    for (const access of uc.collectionAccess) {
+      if (ioCount >= MAX_IO_PER_USE_CASE || w.steps.length >= MAX_STEPS) break;
+      const col = collectionById.get(access.collectionId);
+      const colName =
+        col?.name ??
+        (access.collectionId.split(":").slice(1).join(":") || "collection");
+      const owner = col?.repoId ?? uc.repoId;
+      const ownerTitle =
+        input.repoTitles.get(owner) ?? SHORT_REPO[owner] ?? owner;
+      const kinds = kindSummary(access.operations.map((o) => o.kind));
+      covered.add("mongo");
+      pushSystemIo(w, index, depth + 1, {
+        systemId: "mongo",
+        ownerRepoId: owner,
+        label: `MongoDB (${ownerTitle})`,
+        detail: `${kinds} ${colName}`,
+      });
+      ioCount++;
+    }
+
+    for (const access of uc.httpAccess) {
+      if (ioCount >= MAX_IO_PER_USE_CASE || w.steps.length >= MAX_STEPS) break;
+      const client = httpClientById.get(access.clientId);
+      const systemId = client?.system && client.system !== "kafka"
+        ? client.system
+        : "http";
+      if (systemId === "kafka") continue;
+      const title =
+        input.systemTitles.get(systemId) ??
+        SYSTEM_SHORT[systemId] ??
+        systemId;
+      const op = access.operations[0];
+      if (!op) continue;
+      const extra =
+        access.operations.length > 1
+          ? ` +${access.operations.length - 1}`
+          : "";
+      covered.add(systemId);
+      pushSystemIo(w, index, depth + 1, {
+        systemId,
+        ownerRepoId: null,
+        label: title,
+        detail: `${op.httpMethod} /${shortenPath(op.path)}${extra}`,
+      });
+      ioCount++;
+    }
+
     for (const system of uc.systems) {
-      if (system === "kafka") continue;
+      if (system === "kafka" || covered.has(system)) continue;
       w.systems.add(system);
       if (w.steps.length < MAX_STEPS) {
+        // Named platforms still appear on the diagram when axios attribution
+        // missed them (common for LID / d64).
+        const showUses = ["d03", "d64", "sap", "pns", "redis", "mongo"].includes(
+          system,
+        );
         push(w, {
           depth: depth + 1,
           kind: "system",
           id: system,
-          repoId: null,
-          label: input.systemTitles.get(system) ?? system,
+          repoId: system === "mongo" ? uc.repoId : null,
+          label:
+            input.systemTitles.get(system) ??
+            SYSTEM_SHORT[system] ??
+            system,
+          detail: showUses ? "uses" : undefined,
           parent: index,
         });
       }

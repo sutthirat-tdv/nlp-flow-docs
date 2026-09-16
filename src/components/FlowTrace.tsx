@@ -169,12 +169,23 @@ function Hop({
 }
 
 function TalksTo({ nodes }: { nodes: Node[] }) {
+  const titleOf = useRepoTitle();
   if (!nodes.length) return null;
   return (
     <div className="trace-talks">
       <span className="dimmer">talks to</span>
       {nodes.map((s) => (
-        <SystemLink key={s.index} id={s.step.id} />
+        <span key={s.index} className="trace-io">
+          <SystemLink id={s.step.id} />
+          {s.step.id === "mongo" && s.step.repoId ? (
+            <span className="trace-io__where dimmer">
+              ({titleOf(s.step.repoId) ?? s.step.repoId})
+            </span>
+          ) : null}
+          {s.step.detail ? (
+            <span className="mono trace-io__op">{s.step.detail}</span>
+          ) : null}
+        </span>
       ))}
     </div>
   );

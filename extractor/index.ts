@@ -279,6 +279,8 @@ function main(): void {
     consumers,
     useCases,
     topics,
+    collections,
+    httpClients,
     repoTitles,
     systemTitles,
   });

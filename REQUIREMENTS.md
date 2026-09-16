@@ -148,6 +148,8 @@ Then `npm run update`. The site's Releases page already lists recent tags per re
 
 9. **Drop `_developer` surfaces from every catalog.** Seed/debug `DeveloperController` / `DevelopEventConsumerController`, `/_developer/` modules, `_developer*` files, and `_test-ac` are not product APIs. Skip them at file walk so endpoints, consumers, CRON jobs, use cases, schemas, collections, and HTTP clients never include them.
 
+10. **Sequence diagrams show concrete I/O.** Prefer `collectionAccess` / `httpAccess` over coarse ctor-only `systems[]`. Draw arrows to short-named system lifelines (D03, LID, Mongo per owning service, …) labeled with verb+path or collection op. Tag `sid.*` / `*.bff.*` Kafka messages as SID / BFF. Cap I/O arrows per use case so charts stay readable.
+
 ### Known remaining accuracy issues
 
 - `ApplyLoyaltyEvent` in tmf658 has several handlers on the same topic; the walk fans out to all of them (registration rule, mission earn, generic apply). That is structurally true but noisy on some diagrams.
@@ -167,7 +169,7 @@ Hash router (`HashRouter`) so `dist/` works from any static path.
 | `/`                                  | Overview: stats, architecture **sequence** diagram, four services, sample entry flows                                     |
 | `/guide`                             | **Hand-written** new-joiner mental model (the only prose that is not generated)                                           |
 | `/services`, `/services/:repoId`     | Layer list, who-talks-to-whom matrix, domains, env vars, version                                                          |
-| `/flows`, `/flows/:flowId`           | Filterable catalog; **mermaid sequence** (time order) + indented step list                                                |
+| `/flows`, `/flows/:flowId`           | Filterable catalog; **mermaid sequence** (time order) with axios/Mongo arrows to D03 / LID / Mongo-(owner) / …; hop trace lists the same I/O detail |
 | `/endpoints`, `/endpoints/:id`       | HTTP catalog plus **CRON** job commands from nlp-cronjob; request/response fields; link to flow                           |
 | `/topics`, `/topics/:name`           | Kafka catalog; publishers, consumers, payload schema, family                                                              |
 | `/use-cases`, `/use-cases/:id`       | Business logic catalog; triggers, I/O schemas, publishes, deps, **Mongo create vs query**, **axios calls**, thrown errors |

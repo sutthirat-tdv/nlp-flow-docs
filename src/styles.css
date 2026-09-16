@@ -862,6 +862,25 @@ tbody tr:hover {
   margin-top: 6px;
 }
 
+.trace-io {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: baseline;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.trace-io__where {
+  font-size: 11px;
+}
+
+.trace-io__op {
+  font-size: 11.5px;
+}
+
 .trace-dest {
   font-size: 12px;
 }
