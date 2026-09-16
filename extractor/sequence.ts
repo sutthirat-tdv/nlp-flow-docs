@@ -207,7 +207,7 @@ export function toSequence(steps: FlowStep[], input: SequenceInput): string {
   if (hasDeadEnd) remember("outside", "Outside");
 
   const lines: string[] = [
-    "%%{init: {'sequence': {'useMaxWidth': false, 'wrap': false, 'mirrorActors': false, 'actorMargin': 56, 'width': 150, 'messageMargin': 18}}}%%",
+    "%%{init: {'sequence': {'useMaxWidth': false, 'wrap': true, 'mirrorActors': false, 'actorMargin': 56, 'width': 150, 'messageMargin': 18}}}%%",
     "sequenceDiagram",
     "  autonumber",
     ...declare,

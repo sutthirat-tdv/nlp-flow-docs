@@ -630,10 +630,11 @@ tbody tr:hover {
 
 .mermaid-wrap {
   background: #0d1426;
-  border: 1px solid var(--border-soft);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 12px 8px;
+  padding: 14px 10px;
   overflow-x: auto;
+  box-shadow: inset 0 0 0 1px rgba(138, 160, 200, 0.06);
 }
 
 .mermaid-wrap svg {
@@ -641,6 +642,43 @@ tbody tr:hover {
   height: auto;
   display: block;
   margin: 0 auto;
+}
+
+/* Stronger outlines on sequence actors, notes, and activation boxes */
+.mermaid-wrap svg .actor,
+.mermaid-wrap svg .actor-man,
+.mermaid-wrap svg rect.actor {
+  stroke: #6b82b0 !important;
+  stroke-width: 1.5px !important;
+}
+
+.mermaid-wrap svg .note,
+.mermaid-wrap svg rect.note {
+  stroke: #7a90b8 !important;
+  stroke-width: 1.4px !important;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.25));
+}
+
+.mermaid-wrap svg .activation0,
+.mermaid-wrap svg .activation1,
+.mermaid-wrap svg .activation2,
+.mermaid-wrap svg rect.activation0,
+.mermaid-wrap svg rect.activation1,
+.mermaid-wrap svg rect.activation2 {
+  stroke: #8aa0c8 !important;
+  stroke-width: 1.2px !important;
+  fill: #1a2744 !important;
+}
+
+.mermaid-wrap svg .messageLine0,
+.mermaid-wrap svg .messageLine1 {
+  stroke: #9eb4d8 !important;
+  stroke-width: 1.35px !important;
+}
+
+.mermaid-wrap svg .loopLine,
+.mermaid-wrap svg line.loopLine {
+  stroke: #5b6c92 !important;
 }
 
 .mermaid-wrap--scroll {
@@ -1317,29 +1355,38 @@ tbody tr:hover {
 }
 
 .db-table__body {
-  padding: 2px 0 4px;
+  padding: 0;
 }
 
 .db-table__row {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 3px 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+  gap: 8px 10px;
+  align-items: start;
+  padding: 6px 10px;
   font-size: 12px;
   line-height: 1.35;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.db-table__row:last-child {
+  border-bottom: none;
 }
 
 .db-table__row--empty,
 .db-table__row--more {
   color: var(--text-dimmer);
   font-size: 11.5px;
+  display: block;
 }
 
 .db-table__col {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 5px;
   min-width: 0;
+  padding-right: 8px;
+  border-right: 1px solid var(--border-soft);
 }
 
 .db-table__col-name {
@@ -1353,11 +1400,11 @@ tbody tr:hover {
   color: var(--text-dimmer);
   font-family: var(--mono);
   font-size: 11px;
-  flex: 0 1 auto;
   min-width: 0;
   text-align: right;
   overflow-wrap: anywhere;
   word-break: break-word;
+  padding-left: 2px;
 }
 
 .db-key {
