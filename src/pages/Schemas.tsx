@@ -16,7 +16,7 @@ import {
 } from '../components/ui';
 import { useData, useRepoSchemas, useSchema } from '../data';
 import { endpointHref, isBatchJob } from '../entryLinks';
-import type { Schema, SchemaField } from '../types';
+import type { SchemaField, SchemaSummary } from '../types';
 
 const LAYER_LABEL: Record<string, string> = {
 	'http-request': 'HTTP request',
@@ -37,6 +37,21 @@ const LAYER_TONE: Record<string, string | undefined> = {
 	downstream: 'teal',
 	'use-case': 'purple',
 };
+
+/** Narrative order: request in, business shapes, event bus, storage, downstream. */
+const LAYER_ORDER = Object.keys(LAYER_LABEL);
+
+const KIND_LABEL: Record<string, string> = {
+	class: 'Classes',
+	interface: 'Interfaces',
+	enum: 'Enums',
+	type: 'Type aliases',
+};
+
+const KIND_ORDER = ['class', 'interface', 'enum', 'type'];
+
+/** Schemas per (layer, kind) sub-table before a "+N more" hint takes over. */
+const GROUP_LIMIT = 60;
 
 export function SchemasPage() {
 	const { core } = useData();
@@ -59,6 +74,44 @@ export function SchemasPage() {
 			)
 			.sort((a, b) => b.usedByCount - a.usedByCount || a.name.localeCompare(b.name));
 	}, [core.schemaIndex, repo, layer, kind, query]);
+
+	// Layer first (the domain-meaningful split — request/response/event/storage/…),
+	// kind within each layer (class/interface/enum/type alias) — a 12k-row flat
+	// table is unbrowsable; this is how a reader actually thinks about "what kind
+	// of shape is this".
+	const groups = useMemo(() => {
+		const byLayer = new Map<string, typeof schemas>();
+		for (const s of schemas) {
+			const list = byLayer.get(s.layer) ?? [];
+			list.push(s);
+			byLayer.set(s.layer, list);
+		}
+		const layerKeys = [
+			...LAYER_ORDER.filter(l => byLayer.has(l)),
+			...[...byLayer.keys()].filter(l => !LAYER_ORDER.includes(l)),
+		];
+		return layerKeys.map(layerKey => {
+			const layerSchemas = byLayer.get(layerKey)!;
+			const byKind = new Map<string, typeof schemas>();
+			for (const s of layerSchemas) {
+				const list = byKind.get(s.kind) ?? [];
+				list.push(s);
+				byKind.set(s.kind, list);
+			}
+			const kindKeys = [
+				...KIND_ORDER.filter(k => byKind.has(k)),
+				...[...byKind.keys()].filter(k => !KIND_ORDER.includes(k)),
+			];
+			return {
+				layer: layerKey,
+				total: layerSchemas.length,
+				kinds: kindKeys.map(kindKey => ({
+					kind: kindKey,
+					items: byKind.get(kindKey)!,
+				})),
+			};
+		});
+	}, [schemas]);
 
 	const setParam = (key: string, value: string) => {
 		const next = new URLSearchParams(params);
@@ -110,20 +163,47 @@ export function SchemasPage() {
 				</span>
 			</div>
 
+			{groups.length === 0 ? <Empty>No schemas match these filters.</Empty> : null}
+
+			{groups.map(group => (
+				<Section
+					key={group.layer}
+					title={
+						<Badge tone={LAYER_TONE[group.layer]}>
+							{LAYER_LABEL[group.layer] ?? group.layer}
+						</Badge>
+					}
+					subtitle={`${group.total.toLocaleString()} schema${group.total === 1 ? '' : 's'}`}
+				>
+					{group.kinds.map(({ kind: kindKey, items }) => (
+						<SchemaKindTable key={kindKey} kind={kindKey} items={items} />
+					))}
+				</Section>
+			))}
+		</>
+	);
+}
+
+function SchemaKindTable({ kind, items }: { kind: string; items: SchemaSummary[] }) {
+	const visible = items.slice(0, GROUP_LIMIT);
+	const hidden = items.length - visible.length;
+	return (
+		<div style={{ marginBottom: 18 }}>
+			<h3 className="dim" style={{ fontSize: 13, margin: '0 0 8px' }}>
+				{KIND_LABEL[kind] ?? kind} <span className="dimmer">({items.length})</span>
+			</h3>
 			<div className="table-wrap">
 				<table>
 					<thead>
 						<tr>
 							<th>Schema</th>
-							<th className="nowrap">Layer</th>
-							<th className="nowrap">Kind</th>
 							<th className="nowrap">Fields</th>
 							<th className="nowrap">Referenced</th>
 							<th>Service</th>
 						</tr>
 					</thead>
 					<tbody>
-						{schemas.slice(0, 400).map(schema => (
+						{visible.map(schema => (
 							<tr key={schema.id}>
 								<td>
 									<Link className="mono" to={`/schemas/${encodeURIComponent(schema.id)}`}>
@@ -132,14 +212,6 @@ export function SchemasPage() {
 									<div className="mono dimmer" style={{ fontSize: 11 }}>
 										{schema.file}
 									</div>
-								</td>
-								<td>
-									<Badge tone={LAYER_TONE[schema.layer]}>
-										{LAYER_LABEL[schema.layer] ?? schema.layer}
-									</Badge>
-								</td>
-								<td className="dim" style={{ fontSize: 12.5 }}>
-									{schema.kind}
 								</td>
 								<td className="mono dim">{schema.fieldCount}</td>
 								<td className="mono dim">{schema.usedByCount}</td>
@@ -151,13 +223,13 @@ export function SchemasPage() {
 					</tbody>
 				</table>
 			</div>
-			{schemas.length > 400 ? (
-				<p className="dimmer" style={{ fontSize: 12.5 }}>
-					Showing the first 400 of {schemas.length.toLocaleString()}. Press ⌘K to jump to one by
-					name.
+			{hidden > 0 ? (
+				<p className="dimmer" style={{ fontSize: 12, margin: '6px 0 0' }}>
+					+{hidden.toLocaleString()} more {KIND_LABEL[kind]?.toLowerCase() ?? kind}. Press ⌘K to
+					jump to one by name.
 				</p>
 			) : null}
-		</>
+		</div>
 	);
 }
 
