@@ -628,13 +628,15 @@ tbody tr:hover {
   color: var(--text-dimmer);
 }
 
+/* Stronger outlines on sequence actors, notes, boxes, and activation bars */
+.flow-sequence .mermaid-wrap,
 .mermaid-wrap {
   background: #0d1426;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 14px 10px;
   overflow-x: auto;
-  box-shadow: inset 0 0 0 1px rgba(138, 160, 200, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(138, 160, 200, 0.08);
 }
 
 .mermaid-wrap svg {
@@ -644,41 +646,62 @@ tbody tr:hover {
   margin: 0 auto;
 }
 
-/* Stronger outlines on sequence actors, notes, and activation boxes */
+.flow-sequence .mermaid-wrap svg .actor,
+.flow-sequence .mermaid-wrap svg rect.actor,
 .mermaid-wrap svg .actor,
 .mermaid-wrap svg .actor-man,
 .mermaid-wrap svg rect.actor {
-  stroke: #6b82b0 !important;
-  stroke-width: 1.5px !important;
+  stroke: #7d96c4 !important;
+  stroke-width: 1.75px !important;
+  fill: #1a2744 !important;
 }
 
+.flow-sequence .mermaid-wrap svg .note,
+.flow-sequence .mermaid-wrap svg rect.note,
 .mermaid-wrap svg .note,
 .mermaid-wrap svg rect.note {
-  stroke: #7a90b8 !important;
-  stroke-width: 1.4px !important;
-  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.25));
+  stroke: #8aa0c8 !important;
+  stroke-width: 1.5px !important;
+  fill: #243044 !important;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.28));
 }
 
+.flow-sequence .mermaid-wrap svg .activation0,
+.flow-sequence .mermaid-wrap svg .activation1,
+.flow-sequence .mermaid-wrap svg .activation2,
 .mermaid-wrap svg .activation0,
 .mermaid-wrap svg .activation1,
 .mermaid-wrap svg .activation2,
 .mermaid-wrap svg rect.activation0,
 .mermaid-wrap svg rect.activation1,
 .mermaid-wrap svg rect.activation2 {
-  stroke: #8aa0c8 !important;
-  stroke-width: 1.2px !important;
-  fill: #1a2744 !important;
+  stroke: #9eb4d8 !important;
+  stroke-width: 1.4px !important;
+  fill: #243a5c !important;
 }
 
+.flow-sequence .mermaid-wrap svg .messageLine0,
+.flow-sequence .mermaid-wrap svg .messageLine1,
 .mermaid-wrap svg .messageLine0,
 .mermaid-wrap svg .messageLine1 {
   stroke: #9eb4d8 !important;
-  stroke-width: 1.35px !important;
+  stroke-width: 1.4px !important;
 }
 
+.flow-sequence .mermaid-wrap svg .loopLine,
 .mermaid-wrap svg .loopLine,
 .mermaid-wrap svg line.loopLine {
-  stroke: #5b6c92 !important;
+  stroke: #6b82b0 !important;
+}
+
+/* Participant group boxes (Entry / Services / Downstream) */
+.flow-sequence .mermaid-wrap svg .actor-man,
+.flow-sequence .mermaid-wrap svg rect.actor-box,
+.flow-sequence .mermaid-wrap svg .actor-box,
+.mermaid-wrap svg rect.actor-box,
+.mermaid-wrap svg .actor-box {
+  stroke: #7d96c4 !important;
+  stroke-width: 1.5px !important;
 }
 
 .mermaid-wrap--scroll {

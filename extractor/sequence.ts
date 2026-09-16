@@ -165,23 +165,37 @@ export function toSequence(steps: FlowStep[], input: SequenceInput): string {
   );
 
   const declare: string[] = [];
+  const entryDecls: string[] = [];
+  const serviceDecls: string[] = [];
+  const downstreamDecls: string[] = [];
+  const otherDecls: string[] = [];
   const seenIds = new Set<string>();
-  const remember = (id: string, label: string, actor = false) => {
+
+  const pushDecl = (
+    bucket: string[],
+    id: string,
+    label: string,
+    actor = false,
+  ) => {
     if (seenIds.has(id)) return;
     seenIds.add(id);
-    declare.push(
-      `  ${actor ? "actor" : "participant"} ${pid(id)} as ${msg(label)}`,
+    bucket.push(
+      `    ${actor ? "actor" : "participant"} ${pid(id)} as ${msg(label)}`,
     );
   };
 
-  if (hasHttp) remember("channel", "Channel", true);
-  if (hasCron) remember("scheduler", "Scheduler", true);
-  if (hasExternalTopic) remember("external", "External", true);
+  if (hasHttp) pushDecl(entryDecls, "channel", "Channel", true);
+  if (hasCron) pushDecl(entryDecls, "scheduler", "Scheduler", true);
+  if (hasExternalTopic) pushDecl(entryDecls, "external", "External", true);
   for (const repo of [
     ...REPO_ORDER.filter((r) => usedRepos.includes(r)),
     ...usedRepos.filter((r) => !REPO_ORDER.includes(r)),
   ]) {
-    remember(repo, SHORT_TITLE[repo] ?? input.repoTitles.get(repo) ?? repo);
+    pushDecl(
+      serviceDecls,
+      repo,
+      SHORT_TITLE[repo] ?? input.repoTitles.get(repo) ?? repo,
+    );
   }
   // Downstream systems after the services so Kafka arrows stay left-of-I/O.
   const systemOrder = ["mongo", "d03", "d64", "redis", "sap", "pns"];
@@ -202,9 +216,22 @@ export function toSequence(steps: FlowStep[], input: SequenceInput): string {
   ];
   for (const key of orderedSystemKeys) {
     const step = uniqueSystems.get(key)!;
-    remember(key, systemParticipantLabel(step, input));
+    pushDecl(downstreamDecls, key, systemParticipantLabel(step, input));
   }
-  if (hasDeadEnd) remember("outside", "Outside");
+  if (hasDeadEnd) pushDecl(otherDecls, "outside", "Outside");
+
+  const pushBox = (color: string, title: string, body: string[]) => {
+    if (!body.length) return;
+    declare.push(`  box ${color} ${title}`);
+    declare.push(...body);
+    declare.push("  end");
+  };
+
+  // Bordered groups so Entry / Services / Downstream are easy to tell apart.
+  pushBox("rgba(40, 56, 88, 0.55)", "Entry", entryDecls);
+  pushBox("rgba(36, 70, 120, 0.5)", "Services", serviceDecls);
+  pushBox("rgba(28, 78, 72, 0.45)", "Downstream", downstreamDecls);
+  declare.push(...otherDecls);
 
   const lines: string[] = [
     "%%{init: {'sequence': {'useMaxWidth': false, 'wrap': true, 'mirrorActors': false, 'actorMargin': 56, 'width': 150, 'messageMargin': 18}}}%%",
@@ -249,6 +276,7 @@ export function toSequence(steps: FlowStep[], input: SequenceInput): string {
     if (step.kind === "use-case" || step.kind === "manager") {
       const repo = step.repoId;
       if (repo) {
+        lines.push(`  activate ${pid(repo)}`);
         lines.push(`  Note over ${pid(repo)}: ${msg(step.label)}`);
       }
       const ioKids = kids.filter((i) => steps[i].kind === "system");
@@ -260,6 +288,7 @@ export function toSequence(steps: FlowStep[], input: SequenceInput): string {
         pushArrow(repo, "->>", to, label);
       }
       for (const k of kids.filter((i) => steps[i].kind === "topic")) walk(k);
+      if (repo) lines.push(`  deactivate ${pid(repo)}`);
       return;
     }
 
