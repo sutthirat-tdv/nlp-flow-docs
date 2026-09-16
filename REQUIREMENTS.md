@@ -144,7 +144,7 @@ Then `npm run update`. The site's Releases page already lists recent tags per re
 
 7. **Mongo collections** come from `*MongoRepository` (`db.collection(...)` / `collectionName`), not Mongoose. Attribute create vs query from the use-case (or manager) entry method call graph, same as topics — not a class-level union of every repository method. Draw them as a **database diagram** (table cards with columns and PK/FK lines), not a mermaid `erDiagram`.
 
-8. **nlp-cronjob** is a fifth repo. Nest Commander `@Command` classes are catalogued as `CRON /jobs/<name>` endpoints. Jobs use the same use-case / axios / Mongo extractors. Do not skip `origin/sit` for it.
+8. **nlp-cronjob** is a fifth repo. Nest Commander `@Command` classes are catalogued as `CRON /jobs/<name>` endpoints. Resolve `name: batchName` via `const batchName = BatchName.…` (and the `BatchName` string enum) — never leave the path as `/jobs/batchName`. Jobs use the same use-case / axios / Mongo extractors. Sequence diagrams use a Scheduler actor (not Channel / HTTP 200). Do not skip `origin/sit` for it.
 
 9. **Drop `_developer` surfaces from every catalog.** Seed/debug `DeveloperController` / `DevelopEventConsumerController`, `/_developer/` modules, `_developer*` files, and `_test-ac` are not product APIs. Skip them at file walk so endpoints, consumers, CRON jobs, use cases, schemas, collections, and HTTP clients never include them.
 

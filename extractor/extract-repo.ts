@@ -424,10 +424,21 @@ export function extractRepo(
   // ---------------------------------------------------------------- topics
   // enum member -> topic string, keyed both as `Enum.MEMBER` and `MEMBER`
   const enumMemberToTopic = new Map<string, string>();
+  // any string enum member (BatchName, etc.) for CLI / config resolution
+  const enumMemberToString = new Map<string, string>();
   const topicAliases = new Map<
     string,
     { enumName: string; member: string; source: SourceRef }[]
   >();
+
+  const registerStringEnum = (
+    value: string,
+    enumName: string,
+    member: string,
+  ) => {
+    enumMemberToString.set(`${enumName}.${member}`, value);
+    if (!enumMemberToString.has(member)) enumMemberToString.set(member, value);
+  };
 
   const registerTopic = (
     topic: string,
@@ -469,10 +480,13 @@ export function extractRepo(
           if (!member.initializer || !ts.isStringLiteral(member.initializer))
             continue;
           const value = member.initializer.text;
-          if (!TOPIC_PATTERN.test(value)) continue;
           const memberName = ts.isIdentifier(member.name)
             ? member.name.text
             : textOf(file, member.name);
+          registerStringEnum(value, enumName, memberName);
+          if (qualified !== enumName)
+            registerStringEnum(value, qualified, memberName);
+          if (!TOPIC_PATTERN.test(value)) continue;
           const line = lineOf(file, member);
           registerTopic(value, enumName, memberName, file.path, line);
           if (qualified !== enumName)
@@ -480,6 +494,33 @@ export function extractRepo(
         }
       }
     });
+  };
+
+  /** Resolve `BatchName.X`, `name: batchName` → `const batchName = BatchName.X`, or a string literal. */
+  const resolveStringExpr = (
+    file: ParsedFile,
+    expr: string,
+    seen = new Set<string>(),
+  ): string | null => {
+    const cleaned = expr.trim();
+    if (!cleaned || seen.has(cleaned)) return null;
+    seen.add(cleaned);
+    const lit = /^['"`]([^'"`]+)['"`]$/.exec(cleaned)?.[1];
+    if (lit) return lit;
+    const dotted = /^([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)$/.exec(cleaned);
+    if (dotted) {
+      return (
+        enumMemberToString.get(`${dotted[1]}.${dotted[2]}`) ??
+        enumMemberToString.get(dotted[2]) ??
+        null
+      );
+    }
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(cleaned)) return null;
+    const assign = new RegExp(
+      `(?:const|let|var)\\s+${cleaned}\\s*=\\s*([^;\\n]+)`,
+    ).exec(file.text);
+    if (!assign) return null;
+    return resolveStringExpr(file, assign[1].trim(), seen);
   };
 
   const enumFiles = new Set<string>([
@@ -1067,9 +1108,9 @@ export function extractRepo(
       const commandDeco = findDecorator(cls, file, "Command");
       if (!commandDeco) continue;
       const arg = commandDeco.args.join(",");
+      const nameExpr = /name:\s*([A-Za-z0-9_.'"`]+)/.exec(arg)?.[1];
       const commandName =
-        /name:\s*['"`]([^'"`]+)['"`]/.exec(arg)?.[1] ??
-        /name:\s*([A-Za-z0-9_.]+)/.exec(arg)?.[1]?.split(".").pop() ??
+        (nameExpr ? resolveStringExpr(file, nameExpr) : null) ??
         cls.name!.text;
       const description =
         /description:\s*['"`]([^'"`]+)['"`]/.exec(arg)?.[1] ?? null;

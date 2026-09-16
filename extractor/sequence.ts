@@ -19,6 +19,7 @@ const SHORT_TITLE: Record<string, string> = {
   "backoffice-bff": "BackOffice",
   "agg-common": "Aggregator",
   tmf658: "TMF658",
+  cronjob: "Cronjob",
 };
 
 function pid(raw: string): string {
@@ -70,7 +71,13 @@ export function toSequence(steps: FlowStep[], input: SequenceInput): string {
   const usedRepos = [
     ...new Set(steps.map((s) => s.repoId).filter((r): r is string => !!r)),
   ];
-  const hasHttp = steps.some((s) => s.kind === "endpoint");
+  const isCronEndpoint = (label: string) => /^CRON\b/i.test(label);
+  const hasHttp = steps.some(
+    (s) => s.kind === "endpoint" && !isCronEndpoint(s.label),
+  );
+  const hasCron = steps.some(
+    (s) => s.kind === "endpoint" && isCronEndpoint(s.label),
+  );
   const hasExternalTopic = steps[0]?.kind === "topic";
   const hasDeadEnd = steps.some(
     (s, i) =>
@@ -90,6 +97,7 @@ export function toSequence(steps: FlowStep[], input: SequenceInput): string {
   };
 
   if (hasHttp) remember("channel", "Channel", true);
+  if (hasCron) remember("scheduler", "Scheduler", true);
   if (hasExternalTopic) remember("external", "External", true);
   for (const repo of [
     ...REPO_ORDER.filter((r) => usedRepos.includes(r)),
@@ -120,9 +128,12 @@ export function toSequence(steps: FlowStep[], input: SequenceInput): string {
 
     if (step.kind === "endpoint") {
       const to = step.repoId ?? usedRepos[0];
-      if (to) pushArrow("channel", "->>", to, httpLabel(step.label));
+      const cron = isCronEndpoint(step.label);
+      const from = cron ? "scheduler" : "channel";
+      const done = cron ? "done" : "HTTP 200";
+      if (to) pushArrow(from, "->>", to, httpLabel(step.label));
       for (const k of kids) walk(k);
-      if (to) pushArrow(to, "-->>", "channel", "HTTP 200");
+      if (to) pushArrow(to, "-->>", from, done);
       return;
     }
 
