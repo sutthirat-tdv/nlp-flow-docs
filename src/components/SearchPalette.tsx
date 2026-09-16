@@ -10,6 +10,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useData } from "../data";
+import { ENTITY_DEFS } from "../entityCatalog";
 import { endpointHref, isBatchJob } from "../entryLinks";
 
 interface Doc {
@@ -23,6 +24,7 @@ interface Doc {
 }
 
 const KIND_LABEL: Record<string, string> = {
+  entity: "Entity",
   flow: "Flow",
   endpoint: "API",
   job: "Batch",
@@ -44,6 +46,16 @@ export function SearchPalette({ onClose }: { onClose: () => void }) {
 
   const { search, docs } = useMemo(() => {
     const documents: Doc[] = [
+      ...ENTITY_DEFS.map((e) => ({
+        id: `entity|${e.id}`,
+        kind: "entity",
+        title: e.title,
+        subtitle: "Business entity · Mongo + D03",
+        repoId: null,
+        body: [e.summary, e.composition, ...e.collectionPatterns, ...e.domains]
+          .join(" "),
+        route: `/entities/${e.id}`,
+      })),
       ...core.flowIndex.map((f) => ({
         id: `flow|${f.id}`,
         kind: "flow",

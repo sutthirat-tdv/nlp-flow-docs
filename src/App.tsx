@@ -6,6 +6,7 @@ import { useData } from "./data";
 import { CollectionDetailPage, CollectionsPage } from "./pages/Collections";
 import { DependencyDetailPage, DependenciesPage } from "./pages/Dependencies";
 import { EndpointDetailPage, EndpointsPage } from "./pages/Endpoints";
+import { EntitiesPage, EntityDetailPage } from "./pages/Entities";
 import { FlowDetailPage, FlowsPage } from "./pages/Flows";
 import { GuidePage } from "./pages/Guide";
 import { HomePage } from "./pages/Home";
@@ -68,6 +69,7 @@ function Sidebar({ onSearch }: { onSearch: () => void }) {
 
       <div className="sidebar__group">
         <div className="sidebar__label">Data</div>
+        {link("/entities", "Business entities")}
         {link("/schemas", "Data schemas", core.stats.schemas)}
         {link("/database", "Mongo collections", core.stats.collections)}
         {link("/dependencies", "HTTP dependencies", core.stats.httpClients)}
@@ -136,6 +138,8 @@ export function App() {
             />
             <Route path="/schemas" element={<SchemasPage />} />
             <Route path="/schemas/:schemaId" element={<SchemaDetailPage />} />
+            <Route path="/entities" element={<EntitiesPage />} />
+            <Route path="/entities/:entityId" element={<EntityDetailPage />} />
             <Route path="/database" element={<CollectionsPage />} />
             <Route
               path="/database/:collectionId"

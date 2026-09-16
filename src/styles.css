@@ -1621,6 +1621,140 @@ tbody tr:hover {
   text-align: center;
 }
 
+/* ---------------------------------------------------------------- business entities */
+.entity-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.entity-card {
+  display: block;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  text-decoration: none;
+  color: inherit;
+}
+
+.entity-card:hover {
+  border-color: var(--accent);
+  text-decoration: none;
+}
+
+.entity-card__title {
+  font-size: 16px;
+  font-weight: 650;
+  margin-bottom: 6px;
+}
+
+.entity-card__summary {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+
+.entity-card__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--text-dimmer);
+}
+
+.entity-card__stats strong {
+  color: var(--text);
+  font-weight: 650;
+}
+
+.entity-composition {
+  margin-bottom: 16px;
+}
+
+.entity-diagram {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.entity-diagram .mermaid-wrap,
+.entity-diagram .mermaid-wrap--scroll {
+  margin-bottom: 10px;
+}
+
+.entity-structure {
+  margin-top: 4px;
+}
+
+.entity-fields {
+  margin-top: 10px;
+}
+
+.entity-fields .schema-field {
+  border-bottom: 1px solid var(--border-soft);
+  padding: 8px 0;
+}
+
+.entity-fields .schema-field:last-child {
+  border-bottom: none;
+}
+
+.entity-layers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.entity-layer {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  background: var(--bg-raised);
+}
+
+.entity-layer p {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+
+.entity-layer__title {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.entity-layer--sid {
+  border-color: #46307d;
+}
+
+.entity-layer--bff {
+  border-color: #2c4b7f;
+}
+
+.entity-layer--d03 {
+  border-color: #1e4a6b;
+}
+
+.entity-store-block {
+  margin-bottom: 18px;
+}
+
+.entity-store-block h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+@media (max-width: 900px) {
+  .entity-layers {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 900px) {
   .layout {
     grid-template-columns: 1fr;

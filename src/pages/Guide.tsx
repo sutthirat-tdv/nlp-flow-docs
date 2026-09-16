@@ -202,6 +202,9 @@ export function GuidePage() {
             <strong>Repository</strong> — the only thing allowed to touch
             MongoDB or an external HTTP API. Loyalty documents live in TMF658;
             the BFFs keep their own collections as local read models. See{" "}
+            <Link to="/entities/campaign">Campaign structure</Link> (and other{" "}
+            <Link to="/entities">business entities</Link>) to browse fields like
+            an object model and see what D03 still has to fill in. See{" "}
             <Link to="/database">Mongo collections</Link> for the name as it is
             created, which use case inserts vs queries it, and how documents
             point at other collections. See{" "}
