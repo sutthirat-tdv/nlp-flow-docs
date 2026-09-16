@@ -144,7 +144,7 @@ Then `npm run update`. The site's Releases page already lists recent tags per re
 
 7. **Mongo collections** come from `*MongoRepository` (`db.collection(...)` / `collectionName`), not Mongoose. Attribute create vs query from the use-case (or manager) entry method call graph, same as topics — not a class-level union of every repository method. Draw them as a **database diagram** (table cards with columns and PK/FK lines), not a mermaid `erDiagram`.
 
-8. **nlp-cronjob** is a fifth repo. Nest Commander `@Command` classes are catalogued as `CRON /jobs/<name>` entries and shown under **Batch jobs** (`/jobs`), not API endpoints. Resolve `name: batchName` via `const batchName = BatchName.…` (and the `BatchName` string enum) — never leave the path as `/jobs/batchName`. Jobs use the same use-case / axios / Mongo extractors. Sequence diagrams use a Scheduler actor (not Channel / HTTP 200). Do not skip `origin/sit` for it.
+8. **nlp-cronjob** is a fifth repo. Nest Commander `@Command` classes are catalogued as `CRON /jobs/<name>` entries and shown under **Batch jobs** (`/jobs`), not API endpoints. Resolve `name: batchName` via `const batchName = BatchName.…` (and the `BatchName` string enum) — never leave the path as `/jobs/batchName`. Match `*.useCase.ts` as use-case files (camelCase). Job detail pages embed sequence + hop trace. Jobs use the same use-case / axios / Mongo extractors. Sequence diagrams use a Scheduler actor (not Channel / HTTP 200). Do not skip `origin/sit` for it.
 
 9. **Drop `_developer` surfaces from every catalog.** Seed/debug `DeveloperController` / `DevelopEventConsumerController`, `/_developer/` modules, `_developer*` files, and `_test-ac` are not product APIs. Skip them at file walk so endpoints, consumers, CRON jobs, use cases, schemas, collections, and HTTP clients never include them.
 
@@ -171,7 +171,7 @@ Hash router (`HashRouter`) so `dist/` works from any static path.
 | `/services`, `/services/:repoId`     | Layer list, who-talks-to-whom matrix, domains, env vars, version                                                          |
 | `/flows`, `/flows/:flowId`           | Filterable catalog; **mermaid sequence** (time order) with axios/Mongo arrows to D03 / LID / Mongo-(owner) / …; hop trace lists the same I/O detail |
 | `/endpoints`, `/endpoints/:id`       | HTTP catalog for the BFFs only; request/response fields; link to flow                                                     |
-| `/jobs`, `/jobs/:id`                 | Nest Commander **batch jobs** from nlp-cronjob (`CRON /jobs/<BatchName>`); use cases and flow                             |
+| `/jobs`, `/jobs/:id`                 | Nest Commander **batch jobs**; embedded **sequence + hop trace**, Mongo/axios I/O, topics on the path                     |
 | `/topics`, `/topics/:name`           | Kafka catalog; publishers, consumers, payload schema, family                                                              |
 | `/use-cases`, `/use-cases/:id`       | Business logic catalog; triggers, I/O schemas, publishes, deps, **Mongo create vs query**, **axios calls**, thrown errors |
 | `/schemas`, `/schemas/:id`           | DTO/entity/enum browser; nested expand; used-by; link to Mongo collection when it is a stored document                    |

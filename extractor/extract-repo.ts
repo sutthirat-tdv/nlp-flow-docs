@@ -374,9 +374,10 @@ function isSchemaFile(file: string): boolean {
 }
 
 function isUseCaseFile(file: string): boolean {
+  // Matches *.use-case.ts, *.usecase.ts, and Nest-style *.useCase.ts (nlp-cronjob).
   return (
-    /(^|\/)[^/]*use[-.]?case\.ts$/.test(file) &&
-    !/\.dto\.ts$|\.spec\.ts$/.test(file)
+    /(^|\/)[^/]*use[-.]?case\.ts$/i.test(file) &&
+    !/\.dto\.ts$|\.spec\.ts$/i.test(file)
   );
 }
 
@@ -1155,9 +1156,7 @@ export function extractRepo(
           className: invoked,
           repoId: repo.id,
           domain: domainFromPath(repo, entryClass.file),
-          title: toTitle(
-            called?.method ?? invoked.replace(/UseCase$|Service$|Manager$/, ""),
-          ),
+          title: toTitle(invoked.replace(/UseCase$|Service$|Manager$/, "")),
           source: sourceRef(repo, prov, entryClass.file, entryClass.line),
           loc: 0,
           entryMethod: called?.method ?? "execute",
