@@ -112,3 +112,70 @@ export function httpSystemRank(systemId: string): number {
   const i = HTTP_SYSTEM_ORDER.indexOf(systemId);
   return i === -1 ? 100 + (systemId.charCodeAt(0) || 0) : i;
 }
+
+export type MongoDbFamilyId = "bff" | "lid" | "sid" | "other";
+
+export function mongoDbFamily(connection: string | null | undefined): {
+  id: MongoDbFamilyId;
+  label: string;
+  /** Short label for the Connection column (family is already in the section). */
+  connectionLabel: string;
+  /** Full Nest inject token, when known. */
+  token: string | null;
+} {
+  const token = connection ?? "";
+  if (token.startsWith("LID_")) {
+    const sub = token
+      .replace(/^LID_/, "")
+      .replace(/_CONNECTION$/, "")
+      .toLowerCase();
+    return {
+      id: "lid",
+      label: "LID",
+      connectionLabel: sub || "lid",
+      token: connection ?? null,
+    };
+  }
+  if (token === "LOYALTY_MANAGEMENT_CONNECTION") {
+    return {
+      id: "sid",
+      label: "SID",
+      connectionLabel: "loyalty-management",
+      token: connection ?? null,
+    };
+  }
+  if (token === "BFF_DATABASE_CONNECTION") {
+    return {
+      id: "bff",
+      label: "BFF",
+      connectionLabel: "bff",
+      token: connection ?? null,
+    };
+  }
+  if (token === "NLP_DATABASE_CONNECTION") {
+    return {
+      id: "bff",
+      label: "BFF",
+      connectionLabel: "nlp",
+      token: connection ?? null,
+    };
+  }
+  return {
+    id: "other",
+    label: "Other",
+    connectionLabel: token || "—",
+    token: connection ?? null,
+  };
+}
+
+const MONGO_DB_FAMILY_ORDER: MongoDbFamilyId[] = [
+  "bff",
+  "lid",
+  "sid",
+  "other",
+];
+
+export function mongoDbFamilyRank(id: MongoDbFamilyId): number {
+  const i = MONGO_DB_FAMILY_ORDER.indexOf(id);
+  return i === -1 ? 99 : i;
+}

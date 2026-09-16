@@ -15,6 +15,11 @@ import {
   SourceLink,
   UseCaseLink,
 } from "../components/ui";
+import {
+  mongoDbFamily,
+  mongoDbFamilyRank,
+  type MongoDbFamilyId,
+} from "../catalogGroups";
 import { useData, useSchema } from "../data";
 import type { CollectionOpKind, MongoCollection, SchemaField } from "../types";
 
@@ -39,6 +44,13 @@ const KIND_TONE: Record<CollectionOpKind, string | undefined> = {
 const WRITE_KINDS: CollectionOpKind[] = ["create", "upsert"];
 const QUERY_KINDS: CollectionOpKind[] = ["read"];
 
+const FAMILY_BLURB: Record<MongoDbFamilyId, string> = {
+  bff: "BFF-local NLP Mongo — console and partner read models",
+  lid: "LID analytics / reporting stores (loyalty, customer, party, product)",
+  sid: "SID loyalty-management system of record (TMF658)",
+  other: "Unannotated or unclassified Mongo connections",
+};
+
 function kindCounts(collection: MongoCollection) {
   const writes = collection.operations.filter((o) =>
     WRITE_KINDS.includes(o.kind),
@@ -52,17 +64,189 @@ function kindCounts(collection: MongoCollection) {
   return { writes, queries, updates };
 }
 
+/** Prefer the busiest copy when the same collection name appears in several services. */
+function pickPrimary(copies: MongoCollection[]): MongoCollection {
+  return [...copies].sort(
+    (a, b) =>
+      b.usedByUseCaseIds.length - a.usedByUseCaseIds.length ||
+      b.fields.length - a.fields.length ||
+      a.repoId.localeCompare(b.repoId),
+  )[0]!;
+}
+
+function groupRows(collections: MongoCollection[]) {
+  const byName = new Map<string, MongoCollection[]>();
+  for (const collection of collections) {
+    const list = byName.get(collection.name) ?? [];
+    list.push(collection);
+    byName.set(collection.name, list);
+  }
+  return [...byName.entries()]
+    .map(([name, copies]) => ({
+      name,
+      copies,
+      primary: pickPrimary(copies),
+    }))
+    .sort(
+      (a, b) =>
+        b.primary.usedByUseCaseIds.length - a.primary.usedByUseCaseIds.length ||
+        a.name.localeCompare(b.name),
+    );
+}
+
+function CollectionsTable({ collections }: { collections: MongoCollection[] }) {
+  const rows = groupRows(collections);
+  if (!rows.length) return <Empty>No collections in this database.</Empty>;
+  return (
+    <div className="table-wrap table-wrap--freeze">
+      <table className="db-collections-table">
+        <thead>
+          <tr>
+            <th>Collection</th>
+            <th>Connection</th>
+            <th className="nowrap">Creates</th>
+            <th className="nowrap">Queries</th>
+            <th className="nowrap">Updates</th>
+            <th className="nowrap">Use cases</th>
+            <th>Links to</th>
+            <th>Service</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(({ name, copies, primary }) => {
+            const counts = kindCounts(primary);
+            const related = primary.related.filter(
+              (r) => r.kind !== "same-name",
+            );
+            const family = mongoDbFamily(primary.connection);
+            const useCases = new Set(
+              copies.flatMap((c) => c.usedByUseCaseIds),
+            ).size;
+            return (
+              <tr key={`${family.id}:${name}`}>
+                <td>
+                  <Link
+                    className="mono"
+                    to={`/database/${encodeURIComponent(primary.id)}`}
+                  >
+                    {name}
+                  </Link>
+                  <div className="mono dimmer" style={{ fontSize: 11 }}>
+                    {primary.entityName ?? primary.repositoryClass}
+                  </div>
+                  {copies.length > 1 ? (
+                    <div className="db-collections-copies">
+                      {copies
+                        .filter((c) => c.id !== primary.id)
+                        .map((c) => (
+                          <Link
+                            key={c.id}
+                            className="mono dimmer"
+                            style={{ fontSize: 11 }}
+                            to={`/database/${encodeURIComponent(c.id)}`}
+                          >
+                            also in {c.repoId}
+                          </Link>
+                        ))}
+                    </div>
+                  ) : null}
+                </td>
+                <td className="db-collections-conn">
+                  {[
+                    ...new Map(
+                      copies.map((c) => {
+                        const meta = mongoDbFamily(c.connection);
+                        return [meta.connectionLabel, meta] as const;
+                      }),
+                    ).values(),
+                  ].map((meta) => (
+                    <span
+                      key={meta.connectionLabel}
+                      className="mono db-collections-conn__label"
+                      title={meta.token ?? undefined}
+                    >
+                      {meta.connectionLabel}
+                    </span>
+                  ))}
+                </td>
+                <td className="mono dim">{counts.writes || "—"}</td>
+                <td className="mono dim">{counts.queries || "—"}</td>
+                <td className="mono dim">{counts.updates || "—"}</td>
+                <td className="mono dim">{useCases || "—"}</td>
+                <td className="db-collections-links">
+                  {related.length === 0 ? (
+                    <span className="dimmer">—</span>
+                  ) : (
+                    <div className="badges">
+                      {related.slice(0, 3).map((link) => (
+                        <Badge key={`${link.collectionId}:${link.via}`}>
+                          <CollectionLink id={link.collectionId} />
+                        </Badge>
+                      ))}
+                      {related.length > 3 ? (
+                        <span className="dimmer" style={{ fontSize: 12 }}>
+                          +{related.length - 3}
+                        </span>
+                      ) : null}
+                    </div>
+                  )}
+                </td>
+                <td>
+                  <div className="badges">
+                    {[...new Set(copies.map((c) => c.repoId))].map((repoId) => (
+                      <RepoBadge key={repoId} repoId={repoId} />
+                    ))}
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export function CollectionsPage() {
   const { core } = useData();
   const [params, setParams] = useSearchParams();
   const [query, setQuery] = useState("");
+  const db = (params.get("db") ?? "all") as MongoDbFamilyId | "all";
   const repo = params.get("repo") ?? "all";
   const access = params.get("access") ?? "all";
-  const view = params.get("view") ?? "diagram";
+  const view = params.get("view") ?? "table";
 
-  const collections = useMemo(() => {
+  const families = useMemo(() => {
+    const counts = new Map<MongoDbFamilyId, { rows: number; names: Set<string> }>();
+    for (const collection of core.collections ?? []) {
+      const { id } = mongoDbFamily(collection.connection);
+      const prev = counts.get(id) ?? { rows: 0, names: new Set<string>() };
+      prev.rows += 1;
+      prev.names.add(collection.name);
+      counts.set(id, prev);
+    }
+    const labels: Record<MongoDbFamilyId, string> = {
+      bff: "BFF",
+      lid: "LID",
+      sid: "SID",
+      other: "Other",
+    };
+    return [...counts.entries()]
+      .map(([id, meta]) => ({
+        id,
+        label: labels[id],
+        count: meta.rows,
+        unique: meta.names.size,
+      }))
+      .sort((a, b) => mongoDbFamilyRank(a.id) - mongoDbFamilyRank(b.id));
+  }, [core.collections]);
+
+  const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return (core.collections ?? [])
+      .filter((c) =>
+        db === "all" ? true : mongoDbFamily(c.connection).id === db,
+      )
       .filter((c) => (repo === "all" ? true : c.repoId === repo))
       .filter((c) => {
         if (access === "all") return true;
@@ -76,7 +260,8 @@ export function CollectionsPage() {
           ? c.name.toLowerCase().includes(needle) ||
             (c.entityName ?? "").toLowerCase().includes(needle) ||
             c.repositoryClass.toLowerCase().includes(needle) ||
-            c.domain.toLowerCase().includes(needle)
+            c.domain.toLowerCase().includes(needle) ||
+            (c.connection ?? "").toLowerCase().includes(needle)
           : true,
       )
       .sort(
@@ -84,38 +269,59 @@ export function CollectionsPage() {
           b.usedByUseCaseIds.length - a.usedByUseCaseIds.length ||
           a.name.localeCompare(b.name),
       );
-  }, [core.collections, repo, access, query]);
+  }, [core.collections, db, repo, access, query]);
 
-  const diagramRepo = repo === "all" ? "tmf658" : repo;
-  const diagramCollections = useMemo(() => {
-    return (core.collections ?? []).filter((c) => c.repoId === diagramRepo);
-  }, [core.collections, diagramRepo]);
+  const sections = useMemo(() => {
+    const byFamily = new Map<MongoDbFamilyId, MongoCollection[]>();
+    for (const collection of filtered) {
+      const { id } = mongoDbFamily(collection.connection);
+      const list = byFamily.get(id) ?? [];
+      list.push(collection);
+      byFamily.set(id, list);
+    }
+    return [...byFamily.entries()].sort(
+      (a, b) => mongoDbFamilyRank(a[0]) - mongoDbFamilyRank(b[0]),
+    );
+  }, [filtered]);
 
   const setParam = (key: string, value: string) => {
     const next = new URLSearchParams(params);
-    if (value === "all" || (key === "view" && value === "diagram"))
-      next.delete(key);
+    if (value === "all" || (key === "view" && value === "table")) next.delete(key);
     else next.set(key, value);
     setParams(next, { replace: true });
   };
 
+  const labelFor = (id: MongoDbFamilyId) =>
+    families.find((f) => f.id === id)?.label ?? id.toUpperCase();
+
   return (
     <>
       <PageHead title="Mongo collections">
-        Every collection a <code>*MongoRepository</code> actually opens. Native
-        driver, not Mongoose — the name is the string passed to{" "}
-        <code>db.collection()</code>. Open one to see when documents are
-        inserted, when they are queried, and which other collections a document
-        points at.
+        Grouped by database — <code>BFF</code>, <code>LID</code>, and{" "}
+        <code>SID</code>. Every collection a <code>*MongoRepository</code>{" "}
+        opens via <code>db.collection()</code>. Same name across services is
+        shown once, with each service that opens it.
       </PageHead>
 
       <div className="toolbar">
         <input
           className="input input--grow"
-          placeholder="Filter by collection, entity or repository…"
+          placeholder="Filter by collection, entity, connection or repository…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
+        <select
+          className="select"
+          value={db}
+          onChange={(e) => setParam("db", e.target.value)}
+        >
+          <option value="all">All databases</option>
+          {families.map(({ id, label, unique }) => (
+            <option key={id} value={id}>
+              {label} ({unique})
+            </option>
+          ))}
+        </select>
         <select
           className="select"
           value={repo}
@@ -142,108 +348,76 @@ export function CollectionsPage() {
           value={view === "erd" ? "diagram" : view}
           onChange={(e) => setParam("view", e.target.value)}
         >
-          <option value="diagram">Diagram</option>
           <option value="table">Table</option>
+          <option value="diagram">Diagram</option>
           <option value="both">Diagram + table</option>
         </select>
         <span className="dimmer" style={{ fontSize: 12.5, marginLeft: "auto" }}>
-          {collections.length.toLocaleString()} of{" "}
+          {filtered.length.toLocaleString()} of{" "}
           {(core.collections ?? []).length.toLocaleString()}
         </span>
       </div>
 
-      {view !== "table" ? (
-        <Section
-          title="Database diagram"
-          subtitle={
-            repo === "all"
-              ? "TMF658 is the loyalty system of record — pick a service to see that database"
-              : `${core.repos.find((r) => r.id === diagramRepo)?.title ?? diagramRepo} collections as tables, columns, and links`
-          }
+      <div className="section-chips">
+        <button
+          type="button"
+          className={`chip${db === "all" ? " active" : ""}`}
+          onClick={() => setParam("db", "all")}
         >
-          {diagramCollections.length ? (
-            <DatabaseDiagram collections={diagramCollections} />
-          ) : (
-            <Empty>No collections in this service.</Empty>
-          )}
-          <p className="dimmer" style={{ fontSize: 12.5, marginTop: 10 }}>
-            Each box is a Mongo collection. PK/FK come from the document type
-            and imported collection constants. Open a table for create vs query
-            and its neighbourhood.
-          </p>
-        </Section>
-      ) : null}
+          All
+        </button>
+        {families.map(({ id, label, unique }) => (
+          <button
+            key={id}
+            type="button"
+            className={`chip${db === id ? " active" : ""}`}
+            onClick={() => setParam("db", id)}
+          >
+            {label}
+            <span className="dimmer">{unique}</span>
+          </button>
+        ))}
+      </div>
 
-      {view !== "diagram" && view !== "erd" ? (
-        <div className="table-wrap table-wrap--freeze">
-          <table>
-            <thead>
-              <tr>
-                <th>Collection</th>
-                <th className="nowrap">Creates</th>
-                <th className="nowrap">Queries</th>
-                <th className="nowrap">Updates</th>
-                <th className="nowrap">Use cases</th>
-                <th>Links to</th>
-                <th>Service</th>
-              </tr>
-            </thead>
-            <tbody>
-              {collections.map((collection) => {
-                const counts = kindCounts(collection);
-                const related = collection.related.filter(
-                  (r) => r.kind !== "same-name",
-                );
-                return (
-                  <tr key={collection.id}>
-                    <td>
-                      <Link
-                        className="mono"
-                        to={`/database/${encodeURIComponent(collection.id)}`}
-                      >
-                        {collection.name}
-                      </Link>
-                      <div className="mono dimmer" style={{ fontSize: 11 }}>
-                        {collection.entityName ?? collection.repositoryClass}
-                      </div>
-                    </td>
-                    <td className="mono dim">{counts.writes || "—"}</td>
-                    <td className="mono dim">{counts.queries || "—"}</td>
-                    <td className="mono dim">{counts.updates || "—"}</td>
-                    <td className="mono dim">
-                      {collection.usedByUseCaseIds.length}
-                    </td>
-                    <td>
-                      {related.length === 0 ? (
-                        <span className="dimmer">—</span>
-                      ) : (
-                        <div className="badges">
-                          {related.slice(0, 3).map((link) => (
-                            <Badge key={`${link.collectionId}:${link.via}`}>
-                              <CollectionLink id={link.collectionId} />
-                            </Badge>
-                          ))}
-                          {related.length > 3 ? (
-                            <span className="dimmer" style={{ fontSize: 12 }}>
-                              +{related.length - 3}
-                            </span>
-                          ) : null}
-                        </div>
-                      )}
-                    </td>
-                    <td>
-                      <RepoBadge repoId={collection.repoId} />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
-      {view !== "diagram" && view !== "erd" && collections.length === 0 ? (
+      {!sections.length ? (
         <Empty>No collections matched those filters.</Empty>
-      ) : null}
+      ) : (
+        sections.map(([familyId, collections]) => {
+          const diagramCollections = groupRows(collections).map(
+            (row) => row.primary,
+          );
+          return (
+            <Section
+              key={familyId}
+              title={labelFor(familyId)}
+              subtitle={FAMILY_BLURB[familyId]}
+              actions={
+                <span className="dimmer">
+                  {diagramCollections.length.toLocaleString()} collection
+                  {diagramCollections.length === 1 ? "" : "s"}
+                </span>
+              }
+            >
+              {view !== "table" ? (
+                <div className="db-family-diagram">
+                  {diagramCollections.length ? (
+                    <DatabaseDiagram collections={diagramCollections} />
+                  ) : (
+                    <Empty>No collections in this database.</Empty>
+                  )}
+                  <p className="dimmer" style={{ fontSize: 12.5, marginTop: 10 }}>
+                    Hover a table to highlight its wires. The list under the
+                    diagram spells out each field → collection link.
+                  </p>
+                </div>
+              ) : null}
+              {view !== "diagram" && view !== "erd" ? (
+                <CollectionsTable collections={collections} />
+              ) : null}
+            </Section>
+          );
+        })
+      )}
     </>
   );
 }
@@ -264,6 +438,7 @@ export function CollectionDetailPage() {
   }
 
   const counts = kindCounts(collection);
+  const family = mongoDbFamily(collection.connection);
   const createdBy = useCasesForKinds(collection, indexes, WRITE_KINDS);
   const queriedBy = useCasesForKinds(collection, indexes, QUERY_KINDS);
   const updatedBy = useCasesForKinds(collection, indexes, ["update", "delete"]);
@@ -293,6 +468,8 @@ export function CollectionDetailPage() {
         crumbs={
           <>
             <Link to="/database">Mongo collections</Link> <span>/</span>{" "}
+            <Link to={`/database?db=${family.id}`}>{family.label}</Link>{" "}
+            <span>/</span>{" "}
             <Link to={`/services/${collection.repoId}`}>
               {indexes.repoById.get(collection.repoId)?.title}
             </Link>{" "}
@@ -323,7 +500,16 @@ export function CollectionDetailPage() {
               <span className="mono">{collection.name}</span>,
             ],
             [
-              "Connection",
+              "Database",
+              <Badge title={collection.connection ?? undefined}>
+                {family.label}
+                {family.connectionLabel && family.connectionLabel !== family.label.toLowerCase()
+                  ? ` · ${family.connectionLabel}`
+                  : ""}
+              </Badge>,
+            ],
+            [
+              "Connection token",
               collection.connection ? (
                 <span className="mono">{collection.connection}</span>
               ) : (

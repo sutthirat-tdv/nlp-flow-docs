@@ -175,7 +175,7 @@ Hash router (`HashRouter`) so `dist/` works from any static path.
 | `/topics`, `/topics/:name`           | Kafka catalog by namespace (`nlp.pty`, `nlp.bff`, `esb.*`, …); publishers, consumers, payload schema, family                |
 | `/use-cases`, `/use-cases/:id`       | Business logic catalog; triggers, I/O schemas, publishes, deps, **Mongo create vs query**, **axios calls**, thrown errors |
 | `/schemas`, `/schemas/:id`           | DTO/entity/enum browser; nested expand; used-by; link to Mongo collection when it is a stored document                    |
-| `/database`, `/database/:id`         | Mongo collections as a **database diagram** (table cards, columns, PK/FK); create vs query methods; document fields       |
+| `/database`, `/database/:id`         | Mongo collections grouped by **BFF / LID / SID**; diagram with hover-traced links + **How they link** list; create vs query |
 | `/dependencies`, `/dependencies/:id` | Outbound **axios** HTTP clients grouped by system (D03, SAP, PNS, IKM, …); verb + path; use cases that actually call them |
 | `/systems`                           | Downstream blast radius                                                                                                   |
 | `/releases`                          | Commit/tag provenance + how to regenerate                                                                                 |
