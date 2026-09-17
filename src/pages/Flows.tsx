@@ -30,6 +30,19 @@ export function FlowsPage() {
   const entry = params.get("entry") ?? "all";
   const scope = params.get("scope") ?? "all";
   const repo = params.get("repo") ?? "all";
+  const moduleFilter = params.get("module") ?? "all";
+
+  // Same shape as /use-cases' domain dropdown: options narrow to the
+  // selected service, and picking a service clears any stale module choice.
+  const moduleOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const f of core.flowIndex) {
+      if (repo !== "all" && !f.repos.includes(repo)) continue;
+      const mod = flowModule(f, indexes.endpointById, indexes.consumersByTopic);
+      if (mod) set.add(mod.domain);
+    }
+    return [...set].sort();
+  }, [core.flowIndex, repo, indexes.endpointById, indexes.consumersByTopic]);
 
   const flows = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -37,6 +50,12 @@ export function FlowsPage() {
       .filter((f) => (entry === "all" ? true : f.entry.kind === entry))
       .filter((f) => (scope === "cross" ? f.crossService : true))
       .filter((f) => (repo === "all" ? true : f.repos.includes(repo)))
+      .filter((f) =>
+        moduleFilter === "all"
+          ? true
+          : flowModule(f, indexes.endpointById, indexes.consumersByTopic)
+              ?.domain === moduleFilter,
+      )
       .filter((f) =>
         needle
           ? f.title.toLowerCase().includes(needle) ||
@@ -50,7 +69,16 @@ export function FlowsPage() {
           b.stepCount -
           (a.repos.length * 1000 + a.stepCount),
       );
-  }, [core.flowIndex, entry, scope, repo, query]);
+  }, [
+    core.flowIndex,
+    entry,
+    scope,
+    repo,
+    moduleFilter,
+    query,
+    indexes.endpointById,
+    indexes.consumersByTopic,
+  ]);
 
   // Grouped by module/feature — service, then the domain folder the entry
   // endpoint or consumer actually lives under — rather than one flat list.
@@ -84,6 +112,7 @@ export function FlowsPage() {
     const next = new URLSearchParams(params);
     if (value === "all") next.delete(key);
     else next.set(key, value);
+    if (key === "repo") next.delete("module");
     setParams(next, { replace: true });
   };
 
@@ -121,6 +150,18 @@ export function FlowsPage() {
           {core.repos.map((r) => (
             <option key={r.id} value={r.id}>
               {r.title}
+            </option>
+          ))}
+        </select>
+        <select
+          className="select"
+          value={moduleFilter}
+          onChange={(e) => setParam("module", e.target.value)}
+        >
+          <option value="all">Any module</option>
+          {moduleOptions.map((d) => (
+            <option key={d} value={d}>
+              {d}
             </option>
           ))}
         </select>
