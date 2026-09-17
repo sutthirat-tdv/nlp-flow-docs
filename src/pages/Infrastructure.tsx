@@ -69,7 +69,7 @@ export function InfrastructurePage() {
 
 function InfraSummaryCard({ kind }: { kind: InfraKind }) {
   const repoIds = [...new Set(kind.sources.map((s) => s.repoId))];
-  const teaser = kind.notes[0];
+  const teaser = kind.notes[0] ?? kind.summary;
   return (
     <Link to={`/infrastructure/${encodeURIComponent(kind.id)}`} className="card infra-card infra-card--link">
       <div className="infra-card__head">
@@ -137,11 +137,24 @@ export function InfrastructureDetailPage() {
         ) : null}
       </PageHead>
 
-      <Section
-        title="How it works"
-        subtitle={`${kind.notes.length} note(s) pulled from doc comments, deduplicated across repos`}
-      >
-        {kind.notes.length ? (
+      {kind.summary ? (
+        <Section
+          title="Summary"
+          subtitle="hand-written — the code had no doc comments, so this is read from the actual config file, not generated"
+        >
+          <div className="card">
+            <p className="dim infra-card__note infra-card__note--summary">
+              {kind.summary}
+            </p>
+          </div>
+        </Section>
+      ) : null}
+
+      {kind.notes.length ? (
+        <Section
+          title="How it works"
+          subtitle={`${kind.notes.length} note(s) pulled from doc comments in the code, deduplicated across repos`}
+        >
           <div className="card">
             {kind.notes.map((note) => (
               <p key={note.slice(0, 40)} className="dim infra-card__note">
@@ -149,10 +162,12 @@ export function InfrastructureDetailPage() {
               </p>
             ))}
           </div>
-        ) : (
+        </Section>
+      ) : !kind.summary ? (
+        <Section title="How it works">
           <Empty>No doc comments explaining the why — just plain config values.</Empty>
-        )}
-      </Section>
+        </Section>
+      ) : null}
 
       <Section
         title="Environment variables"

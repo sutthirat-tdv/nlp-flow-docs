@@ -405,6 +405,13 @@ pre {
   border-left: 2px solid var(--border);
 }
 
+/* Hand-written fallback summary — distinct border so it never reads as an
+   extracted doc comment; see extract-infra.ts's InfraKindDef.summary. */
+.infra-card__note--summary {
+  border-left-color: var(--amber);
+  margin-bottom: 0;
+}
+
 .infra-card__envvar {
   display: inline-block;
   background: var(--bg-raised-2);

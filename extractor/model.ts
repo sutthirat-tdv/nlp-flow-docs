@@ -397,6 +397,13 @@ export interface InfraKind {
   category: "downstream" | "platform";
   /** The matching DownstreamSystem id, when this kind also has a /systems entry. */
   systemId: string | null;
+  /**
+   * Curated, hand-written fallback description — the only hand-written prose
+   * outside of /guide. Used when the code has no doc comments explaining
+   * itself; based on actually reading the config module, not guessed. Kept
+   * separate from `notes` so the site is honest about what's generated vs not.
+   */
+  summary: string | null;
   /** Deduplicated operational notes pulled from doc comments across every repo's copy. */
   notes: string[];
   /** Env var names any repo's copy reads, merged and sorted. */
