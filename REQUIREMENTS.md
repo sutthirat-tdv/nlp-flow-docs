@@ -169,7 +169,8 @@ Hash router (`HashRouter`) so `dist/` works from any static path.
 | Route                                | Page                                                                                                                      |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
 | `/`                                  | Overview: stats, architecture **sequence** diagram, four services, sample entry flows                                     |
-| `/guide`                             | **Hand-written** new-joiner mental model (the only prose that is not generated)                                           |
+| `/guide`                             | **Hand-written** new-joiner mental model                                                                                  |
+| `/integrations/myais`                | **Hand-written** myAIS legacy integration architecture — transcribed from a diagram, not extracted (systems involved aren't in `repos.config.json`) |
 | `/services`, `/services/:repoId`     | Layer list, who-talks-to-whom matrix, domains, env vars, version                                                          |
 | `/flows`, `/flows/:flowId`           | Filterable catalog; **mermaid sequence** (time order) with axios/Mongo arrows to D03 / LID / Mongo-(owner) / …; hop trace lists the same I/O detail |
 | `/endpoints`, `/endpoints/:id`       | HTTP catalog by surface (**Back Office**, **Legacy**, OpenAPI/Warranty, IAM); request/response fields; link to flow       |
@@ -188,7 +189,7 @@ Search: MiniSearch built in-browser from `core.json` on first ⌘K. Tokenize cam
 
 Visual: dark theme in `src/styles.css`. Mermaid loaded lazily (`src/components/Mermaid.tsx`).
 
-The `/guide` page is the only hand-written **page**. Two narrower exceptions carry hand-written _strings_ inside otherwise-generated pages, both clearly separated from extracted content in the UI: `downstreamSystems[id].description` in `repos.config.json` (shown on `/systems`), and `InfraKindDef.summary` in `extract-infra.ts` (shown on `/infrastructure/:id` as a distinct amber-bordered "Summary" section, used only when the actual code has no doc comments to extract — every one is grounded in having read the real file, not guessed). If platform facts change, update the relevant one of these three places; nothing else should contain hand-written prose.
+`/guide` and `/integrations/myais` are the only hand-written **pages** — the latter because the systems it describes (MyBE, PRC, Donut, AC, MAS, ESB On Cloud) aren't in `repos.config.json`, so the extractor has no way to know about them; it exists because a team member supplied a source diagram directly, not because the scope changed. Two narrower exceptions carry hand-written _strings_ inside otherwise-generated pages, both clearly separated from extracted content in the UI: `downstreamSystems[id].description` in `repos.config.json` (shown on `/systems`), and `InfraKindDef.summary` in `extract-infra.ts` (shown on `/infrastructure/:id` as a distinct amber-bordered "Summary" section, used only when the actual code has no doc comments to extract — every one is grounded in having read the real file, not guessed). If platform facts change, update the relevant one of these four places; nothing else should contain hand-written prose.
 
 ---
 
@@ -218,6 +219,8 @@ nlp-flow-docs/
     index.ts               orchestrate + write public/data
   src/                     Vite React app
     auth/                  sign-in gate: AuthGate, AuthContext, session.ts (domain check only, no server)
+    pages/Guide.tsx        hand-written new-joiner mental model
+    pages/MyAisIntegration.tsx  hand-written myAIS legacy integration (see "Website" hand-written-content list)
   public/data/             generated JSON (gitignored if large; regenerate)
   .cache/snapshots/        gitignored
 ```

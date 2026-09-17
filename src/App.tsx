@@ -10,6 +10,7 @@ import { EndpointDetailPage, EndpointsPage } from "./pages/Endpoints";
 import { EntitiesPage, EntityDetailPage } from "./pages/Entities";
 import { FlowDetailPage, FlowsPage } from "./pages/Flows";
 import { GuidePage } from "./pages/Guide";
+import { MyAisIntegrationPage } from "./pages/MyAisIntegration";
 import { HomePage } from "./pages/Home";
 import { InfrastructureDetailPage, InfrastructurePage } from "./pages/Infrastructure";
 import { JobDetailPage, JobsPage } from "./pages/Jobs";
@@ -58,6 +59,11 @@ function Sidebar({ onSearch }: { onSearch: () => void }) {
         {link("/", "Overview")}
         {link("/guide", "New joiner guide")}
         {link("/services", "Services", core.stats.repos)}
+      </div>
+
+      <div className="sidebar__group">
+        <div className="sidebar__label">Integrations</div>
+        {link("/integrations/myais", "myAIS legacy")}
       </div>
 
       <div className="sidebar__group">
@@ -137,6 +143,10 @@ export function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/guide" element={<GuidePage />} />
+            <Route
+              path="/integrations/myais"
+              element={<MyAisIntegrationPage />}
+            />
             <Route path="/services" element={<ServicesPage />} />
             <Route path="/services/:repoId" element={<ServiceDetailPage />} />
             <Route path="/flows" element={<FlowsPage />} />
