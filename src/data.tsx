@@ -26,6 +26,7 @@ interface Indexes {
   topicByName: Map<string, CoreData["topics"][number]>;
   repoById: Map<string, CoreData["repos"][number]>;
   systemById: Map<string, CoreData["systems"][number]>;
+  infraById: Map<string, CoreData["infra"][number]>;
   collectionById: Map<string, CoreData["collections"][number]>;
   collectionsBySchemaId: Map<string, CoreData["collections"][number][]>;
   httpClientById: Map<string, CoreData["httpClients"][number]>;
@@ -87,6 +88,7 @@ function buildIndexes(core: CoreData): Indexes {
     topicByName: new Map(core.topics.map((t) => [t.name, t])),
     repoById: new Map(core.repos.map((r) => [r.id, r])),
     systemById: new Map(core.systems.map((s) => [s.id, s])),
+    infraById: new Map((core.infra ?? []).map((k) => [k.id, k])),
     collectionById: new Map((core.collections ?? []).map((c) => [c.id, c])),
     collectionsBySchemaId,
     httpClientById: new Map((core.httpClients ?? []).map((c) => [c.id, c])),

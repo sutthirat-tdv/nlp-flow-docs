@@ -362,11 +362,32 @@ pre {
   gap: 12px;
 }
 
+.infra-card--link {
+  color: inherit;
+  border: 1px solid var(--border-soft);
+}
+
+.infra-card--link:hover {
+  border-color: var(--accent);
+  text-decoration: none;
+}
+
 .infra-card__head {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.infra-card__teaser {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  /* Clamp the teaser so cards in a row stay roughly the same height. */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .infra-card__title {
