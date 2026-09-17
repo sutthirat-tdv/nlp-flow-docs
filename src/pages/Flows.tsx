@@ -48,11 +48,15 @@ export function FlowsPage() {
   // their own dedicated page (/jobs) with the same sequence + hop trace
   // embedded — listing them here too is pure duplication, not a second view
   // worth having. CMS admin flows and health-check probes (see
-  // EXCLUDED_DOMAINS) are excluded on request. None of this is removed from
-  // the generated data itself — /jobs/:id still reads the exact same Flow
-  // object via useFlow() for its own sequence view.
+  // EXCLUDED_DOMAINS) are excluded on request, and so — on request — is every
+  // Back Office BFF entry (the internal admin console; 658 of 961 flows,
+  // by far the largest single surface). None of this is removed from the
+  // generated data itself — /jobs/:id still reads the exact same Flow
+  // object via useFlow() for its own sequence view, and /services/backoffice-bff
+  // still shows Back Office's own stats untouched.
   const baseFlows = useMemo(() => {
     return core.flowIndex.filter((f) => {
+      if (f.entryRepoId === "backoffice-bff") return false;
       if (f.entry.kind === "endpoint") {
         const endpoint = indexes.endpointById.get(f.entry.id);
         if (endpoint && isBatchJob(endpoint.method)) return false;
@@ -177,11 +181,13 @@ export function FlowsPage() {
           onChange={(e) => setParam("repo", e.target.value)}
         >
           <option value="all">Any service</option>
-          {core.repos.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.title}
-            </option>
-          ))}
+          {core.repos
+            .filter((r) => r.id !== "backoffice-bff")
+            .map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.title}
+              </option>
+            ))}
         </select>
         <select
           className="select"
@@ -208,8 +214,11 @@ export function FlowsPage() {
       <p className="dimmer" style={{ fontSize: 12, marginTop: -8 }}>
         Batch jobs have their own page (
         <Link to="/jobs">Batch jobs</Link>) with the same sequence, so they
-        aren't listed again here; CMS admin console flows and health-check
-        probes are scoped out too.
+        aren't listed again here; CMS admin console flows, health-check
+        probes, and every Back Office BFF entry are scoped out too — see{" "}
+        <Link to="/services/backoffice-bff">Back Office BFF</Link> or{" "}
+        <Link to="/endpoints?surface=backoffice">its endpoint catalog</Link>{" "}
+        directly.
       </p>
 
       {groups.length === 0 ? <Empty>No flows match these filters.</Empty> : null}
