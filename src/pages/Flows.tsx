@@ -15,13 +15,13 @@ import {
   TopicLink,
   UseCaseLink,
 } from "../components/ui";
-import { flowBeginning, flowBeginningRank, FlowBeginningId } from "../catalogGroups";
+import { flowModule } from "../catalogGroups";
 import { useData, useFlow } from "../data";
 import { endpointHref, isBatchJob } from "../entryLinks";
 import type { FlowSummary } from "../types";
 
-/** Flows per beginning-group before a "+N more" hint takes over. */
-const GROUP_LIMIT = 150;
+/** Flows per module/feature sub-table before a "+N more" hint takes over. */
+const GROUP_LIMIT = 60;
 
 export function FlowsPage() {
   const { core, indexes } = useData();
@@ -52,27 +52,33 @@ export function FlowsPage() {
       );
   }, [core.flowIndex, entry, scope, repo, query]);
 
-  // Grouped by how the flow actually begins — which HTTP surface, a batch
-  // job, or a Kafka topic — rather than one flat list. A reader almost always
-  // knows which of those they're chasing before they know a flow's title.
+  // Grouped by module/feature — service, then the domain folder the entry
+  // endpoint or consumer actually lives under — rather than one flat list.
+  // Reuses the same `domain` every use case/endpoint page already shows.
   const groups = useMemo(() => {
-    const byId = new Map<
-      FlowBeginningId,
-      { label: string; flows: FlowSummary[] }
-    >();
+    const byRepo = new Map<string, Map<string, FlowSummary[]>>();
     for (const f of flows) {
-      const beginning = flowBeginning(f, indexes.endpointById);
-      const group = byId.get(beginning.id) ?? {
-        label: beginning.label,
-        flows: [],
-      };
-      group.flows.push(f);
-      byId.set(beginning.id, group);
+      const mod = flowModule(f, indexes.endpointById, indexes.consumersByTopic);
+      if (!mod) continue;
+      const domains = byRepo.get(mod.repoId) ?? new Map<string, FlowSummary[]>();
+      const list = domains.get(mod.domain) ?? [];
+      list.push(f);
+      domains.set(mod.domain, list);
+      byRepo.set(mod.repoId, domains);
     }
-    return [...byId.entries()]
-      .sort((a, b) => flowBeginningRank(a[0]) - flowBeginningRank(b[0]))
-      .map(([id, group]) => ({ id, ...group }));
-  }, [flows, indexes.endpointById]);
+    return [...byRepo.entries()]
+      .map(([repoId, domains]) => {
+        const domainGroups = [...domains.entries()]
+          .sort((a, b) => b[1].length - a[1].length)
+          .map(([domain, list]) => ({ domain, flows: list }));
+        return {
+          repoId,
+          total: domainGroups.reduce((n, g) => n + g.flows.length, 0),
+          domains: domainGroups,
+        };
+      })
+      .sort((a, b) => b.total - a.total);
+  }, [flows, indexes.endpointById, indexes.consumersByTopic]);
 
   const setParam = (key: string, value: string) => {
     const next = new URLSearchParams(params);
@@ -134,14 +140,34 @@ export function FlowsPage() {
 
       {groups.map((group) => (
         <Section
-          key={group.id}
-          title={group.label}
-          subtitle={`${group.flows.length.toLocaleString()} flow${group.flows.length === 1 ? "" : "s"}`}
+          key={group.repoId}
+          title={<RepoBadge repoId={group.repoId} />}
+          subtitle={`${group.total.toLocaleString()} flow${group.total === 1 ? "" : "s"} across ${group.domains.length} module${group.domains.length === 1 ? "" : "s"}`}
         >
-          <FlowTable flows={group.flows} />
+          {group.domains.map((d) => (
+            <FlowModuleGroup key={d.domain} domain={d.domain} flows={d.flows} />
+          ))}
         </Section>
       ))}
     </>
+  );
+}
+
+function FlowModuleGroup({
+  domain,
+  flows,
+}: {
+  domain: string;
+  flows: FlowSummary[];
+}) {
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <h3 className="dim" style={{ fontSize: 13, margin: "0 0 8px" }}>
+        <span className="mono">{domain}</span>{" "}
+        <span className="dimmer">({flows.length})</span>
+      </h3>
+      <FlowTable flows={flows} />
+    </div>
   );
 }
 

@@ -140,6 +140,37 @@ export function flowBeginningRank(id: FlowBeginningId): number {
   return i === -1 ? 99 : i;
 }
 
+export interface FlowModule {
+  repoId: string;
+  domain: string;
+}
+
+/**
+ * The module/feature a flow belongs to — reuses the `domain` field already
+ * on every endpoint/consumer (derived by the extractor from source folder
+ * structure, e.g. `src/domains/<domain>/...`), rather than inventing a
+ * separate taxonomy. For an endpoint-rooted flow that's the entry endpoint's
+ * own domain; for a topic-rooted flow it's the domain of whichever consumer
+ * in the entry repo actually handles that topic.
+ */
+export function flowModule(
+  flow: {
+    entry: { kind: "endpoint" | "topic"; id: string };
+    entryRepoId: string;
+  },
+  endpointById: Map<string, { domain: string }>,
+  consumersByTopic: Map<string, { repoId: string; domain: string }[]>,
+): FlowModule | null {
+  if (flow.entry.kind === "endpoint") {
+    const endpoint = endpointById.get(flow.entry.id);
+    return endpoint ? { repoId: flow.entryRepoId, domain: endpoint.domain } : null;
+  }
+  const consumers = consumersByTopic.get(flow.entry.id) ?? [];
+  const match =
+    consumers.find((c) => c.repoId === flow.entryRepoId) ?? consumers[0];
+  return match ? { repoId: flow.entryRepoId, domain: match.domain } : null;
+}
+
 /** Preferred order for outbound HTTP dependency sections. */
 const HTTP_SYSTEM_ORDER = [
   "d03",
