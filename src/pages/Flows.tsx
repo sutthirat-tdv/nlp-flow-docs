@@ -15,11 +15,16 @@ import {
   TopicLink,
   UseCaseLink,
 } from "../components/ui";
+import { flowBeginning, flowBeginningRank, FlowBeginningId } from "../catalogGroups";
 import { useData, useFlow } from "../data";
 import { endpointHref, isBatchJob } from "../entryLinks";
+import type { FlowSummary } from "../types";
+
+/** Flows per beginning-group before a "+N more" hint takes over. */
+const GROUP_LIMIT = 150;
 
 export function FlowsPage() {
-  const { core } = useData();
+  const { core, indexes } = useData();
   const [params, setParams] = useSearchParams();
   const [query, setQuery] = useState("");
   const entry = params.get("entry") ?? "all";
@@ -46,6 +51,28 @@ export function FlowsPage() {
           (a.repos.length * 1000 + a.stepCount),
       );
   }, [core.flowIndex, entry, scope, repo, query]);
+
+  // Grouped by how the flow actually begins — which HTTP surface, a batch
+  // job, or a Kafka topic — rather than one flat list. A reader almost always
+  // knows which of those they're chasing before they know a flow's title.
+  const groups = useMemo(() => {
+    const byId = new Map<
+      FlowBeginningId,
+      { label: string; flows: FlowSummary[] }
+    >();
+    for (const f of flows) {
+      const beginning = flowBeginning(f, indexes.endpointById);
+      const group = byId.get(beginning.id) ?? {
+        label: beginning.label,
+        flows: [],
+      };
+      group.flows.push(f);
+      byId.set(beginning.id, group);
+    }
+    return [...byId.entries()]
+      .sort((a, b) => flowBeginningRank(a[0]) - flowBeginningRank(b[0]))
+      .map(([id, group]) => ({ id, ...group }));
+  }, [flows, indexes.endpointById]);
 
   const setParam = (key: string, value: string) => {
     const next = new URLSearchParams(params);
@@ -103,6 +130,26 @@ export function FlowsPage() {
         </span>
       </div>
 
+      {groups.length === 0 ? <Empty>No flows match these filters.</Empty> : null}
+
+      {groups.map((group) => (
+        <Section
+          key={group.id}
+          title={group.label}
+          subtitle={`${group.flows.length.toLocaleString()} flow${group.flows.length === 1 ? "" : "s"}`}
+        >
+          <FlowTable flows={group.flows} />
+        </Section>
+      ))}
+    </>
+  );
+}
+
+function FlowTable({ flows }: { flows: FlowSummary[] }) {
+  const visible = flows.slice(0, GROUP_LIMIT);
+  const hidden = flows.length - visible.length;
+  return (
+    <>
       <div className="table-wrap">
         <table>
           <thead>
@@ -115,7 +162,7 @@ export function FlowsPage() {
             </tr>
           </thead>
           <tbody>
-            {flows.slice(0, 400).map((flow) => (
+            {visible.map((flow) => (
               <tr key={flow.id}>
                 <td>
                   <Link to={`/flows/${encodeURIComponent(flow.id)}`}>
@@ -150,10 +197,10 @@ export function FlowsPage() {
           </tbody>
         </table>
       </div>
-      {flows.length > 400 ? (
-        <p className="dimmer" style={{ fontSize: 12.5 }}>
-          Showing the first 400. Narrow the filters or use ⌘K to jump straight
-          to one.
+      {hidden > 0 ? (
+        <p className="dimmer" style={{ fontSize: 12.5, margin: "6px 0 0" }}>
+          +{hidden.toLocaleString()} more. Narrow the filters or use ⌘K to
+          jump straight to one.
         </p>
       ) : null}
     </>

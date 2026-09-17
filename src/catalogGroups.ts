@@ -88,6 +88,58 @@ export function apiSurfaceRank(id: ApiSurfaceId): number {
   return i === -1 ? 99 : i;
 }
 
+export type FlowBeginningId =
+  | ApiSurfaceId
+  | "other-http"
+  | "batch"
+  | "kafka-external"
+  | "kafka-internal";
+
+/**
+ * How a flow begins — the HTTP surface it enters through, a scheduled batch
+ * job, or a Kafka topic (split into entry topics published from outside
+ * these repos vs ones something here also publishes, since those read very
+ * differently: one is "where the platform's boundary is", the other is "a
+ * topic worth looking up on its own").
+ */
+export function flowBeginning(
+  flow: {
+    entry: { kind: "endpoint" | "topic"; id: string };
+    external: boolean;
+  },
+  endpointById: Map<string, { repoId: string; path: string; method: string }>,
+): { id: FlowBeginningId; label: string } {
+  if (flow.entry.kind === "topic") {
+    return flow.external
+      ? { id: "kafka-external", label: "Kafka — entry topics" }
+      : { id: "kafka-internal", label: "Kafka — internal topics" };
+  }
+  const endpoint = endpointById.get(flow.entry.id);
+  if (!endpoint) return { id: "other-http", label: "Other HTTP" };
+  if (endpoint.method === "CRON") {
+    return { id: "batch", label: "Batch jobs (CRON)" };
+  }
+  const surface = apiSurface(endpoint);
+  if (surface.id === "other") return { id: "other-http", label: "Other HTTP" };
+  return surface;
+}
+
+const FLOW_BEGINNING_ORDER: FlowBeginningId[] = [
+  "backoffice",
+  "legacy",
+  "openapi",
+  "iam",
+  "other-http",
+  "batch",
+  "kafka-external",
+  "kafka-internal",
+];
+
+export function flowBeginningRank(id: FlowBeginningId): number {
+  const i = FLOW_BEGINNING_ORDER.indexOf(id);
+  return i === -1 ? 99 : i;
+}
+
 /** Preferred order for outbound HTTP dependency sections. */
 const HTTP_SYSTEM_ORDER = [
   "d03",
