@@ -32,21 +32,40 @@ export function FlowsPage() {
   const repo = params.get("repo") ?? "all";
   const moduleFilter = params.get("module") ?? "all";
 
+  // Batch jobs (Nest Commander @Command entries, method "CRON") already have
+  // their own dedicated page (/jobs) with the same sequence + hop trace
+  // embedded — listing them here too is pure duplication, not a second view
+  // worth having. CMS admin flows (backoffice-bff's `cms` domain — campaign
+  // categories/highlights console screens) are excluded on request; scoped
+  // to that one domain so nothing else merely containing "cms" is caught.
+  // Neither is removed from the generated data itself — /jobs/:id still
+  // reads the exact same Flow object via useFlow() for its own sequence view.
+  const baseFlows = useMemo(() => {
+    return core.flowIndex.filter((f) => {
+      if (f.entry.kind === "endpoint") {
+        const endpoint = indexes.endpointById.get(f.entry.id);
+        if (endpoint && isBatchJob(endpoint.method)) return false;
+      }
+      const mod = flowModule(f, indexes.endpointById, indexes.consumersByTopic);
+      return mod?.domain !== "cms";
+    });
+  }, [core.flowIndex, indexes.endpointById, indexes.consumersByTopic]);
+
   // Same shape as /use-cases' domain dropdown: options narrow to the
   // selected service, and picking a service clears any stale module choice.
   const moduleOptions = useMemo(() => {
     const set = new Set<string>();
-    for (const f of core.flowIndex) {
+    for (const f of baseFlows) {
       if (repo !== "all" && !f.repos.includes(repo)) continue;
       const mod = flowModule(f, indexes.endpointById, indexes.consumersByTopic);
       if (mod) set.add(mod.domain);
     }
     return [...set].sort();
-  }, [core.flowIndex, repo, indexes.endpointById, indexes.consumersByTopic]);
+  }, [baseFlows, repo, indexes.endpointById, indexes.consumersByTopic]);
 
   const flows = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    return core.flowIndex
+    return baseFlows
       .filter((f) => (entry === "all" ? true : f.entry.kind === entry))
       .filter((f) => (scope === "cross" ? f.crossService : true))
       .filter((f) => (repo === "all" ? true : f.repos.includes(repo)))
@@ -70,7 +89,7 @@ export function FlowsPage() {
           (a.repos.length * 1000 + a.stepCount),
       );
   }, [
-    core.flowIndex,
+    baseFlows,
     entry,
     scope,
     repo,
@@ -138,7 +157,7 @@ export function FlowsPage() {
           onChange={(e) => setParam("entry", e.target.value)}
         >
           <option value="all">Any entry</option>
-          <option value="endpoint">HTTP / batch entry</option>
+          <option value="endpoint">HTTP entry</option>
           <option value="topic">Kafka topic</option>
         </select>
         <select
@@ -172,10 +191,14 @@ export function FlowsPage() {
           Cross service only
         </button>
         <span className="dimmer" style={{ fontSize: 12.5, marginLeft: "auto" }}>
-          {flows.length.toLocaleString()} of{" "}
-          {core.flowIndex.length.toLocaleString()}
+          {flows.length.toLocaleString()} of {baseFlows.length.toLocaleString()}
         </span>
       </div>
+      <p className="dimmer" style={{ fontSize: 12, marginTop: -8 }}>
+        Batch jobs have their own page (
+        <Link to="/jobs">Batch jobs</Link>) with the same sequence, so they
+        aren't listed again here; CMS admin console flows are scoped out too.
+      </p>
 
       {groups.length === 0 ? <Empty>No flows match these filters.</Empty> : null}
 
