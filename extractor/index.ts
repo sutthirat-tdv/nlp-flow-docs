@@ -8,6 +8,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { DocsConfig, loadConfig, projectRoot, snapshotPath } from "./config.js";
+import { findInfraFiles, mergeInfraKinds, RawInfraFile } from "./extract-infra.js";
 import { extractRepo, RepoExtraction } from "./extract-repo.js";
 import { buildFlows, topicTitle } from "./flows.js";
 import {
@@ -16,6 +17,7 @@ import {
   DownstreamSystem,
   Endpoint,
   HttpClient,
+  InfraKind,
   MongoCollection,
   RepoDoc,
   Schema,
@@ -89,6 +91,7 @@ function main(): void {
   const extractions: RepoExtraction[] = [];
   const repoDocs: RepoDoc[] = [];
   const topicFamilies = new Map<string, string>();
+  const rawInfra: RawInfraFile[] = [];
 
   for (const repo of config.repos) {
     const prov = manifest.repos.find((r) => r.repoId === repo.id);
@@ -98,6 +101,7 @@ function main(): void {
     process.stdout.write(`Extracting ${repo.name}... `);
     const extraction = extractRepo(config, repo, prov, root);
     extractions.push(extraction);
+    rawInfra.push(...findInfraFiles(repo, prov, root));
     for (const [topic, family] of loadTopicFamilies(root))
       topicFamilies.set(topic, family);
     console.log(
@@ -275,6 +279,9 @@ function main(): void {
     };
   });
 
+  // -------------------------------------------------------------- infra
+  const infra: InfraKind[] = mergeInfraKinds(rawInfra);
+
   // -------------------------------------------------------------- flows
   process.stdout.write("Building end-to-end flows... ");
   const flows = buildFlows({
@@ -320,6 +327,7 @@ function main(): void {
     ),
     flows,
     systems,
+    infra,
     stats: {
       repos: repoDocs.length,
       useCases: useCases.length,
@@ -350,6 +358,7 @@ function main(): void {
     consumers: catalog.consumers,
     topics: catalog.topics,
     systems: catalog.systems,
+    infra: catalog.infra,
     collections: catalog.collections,
     httpClients: catalog.httpClients,
     stats: catalog.stats,

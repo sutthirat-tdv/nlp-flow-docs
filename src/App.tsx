@@ -11,6 +11,7 @@ import { EntitiesPage, EntityDetailPage } from "./pages/Entities";
 import { FlowDetailPage, FlowsPage } from "./pages/Flows";
 import { GuidePage } from "./pages/Guide";
 import { HomePage } from "./pages/Home";
+import { InfrastructurePage } from "./pages/Infrastructure";
 import { JobDetailPage, JobsPage } from "./pages/Jobs";
 import { NotFoundPage } from "./pages/NotFound";
 import { ReleasesPage } from "./pages/Releases";
@@ -75,6 +76,7 @@ function Sidebar({ onSearch }: { onSearch: () => void }) {
         {link("/database", "Mongo collections", core.stats.collections)}
         {link("/dependencies", "HTTP dependencies", core.stats.httpClients)}
         {link("/systems", "Downstream systems", core.systems.length)}
+        {link("/infrastructure", "Infrastructure", core.infra.length)}
       </div>
 
       <div className="sidebar__group">
@@ -168,6 +170,7 @@ export function App() {
               element={<DependencyDetailPage />}
             />
             <Route path="/systems" element={<SystemsPage />} />
+            <Route path="/infrastructure" element={<InfrastructurePage />} />
             <Route path="/releases" element={<ReleasesPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>

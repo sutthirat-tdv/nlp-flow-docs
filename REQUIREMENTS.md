@@ -150,6 +150,8 @@ Then `npm run update`. The site's Releases page already lists recent tags per re
 
 10. **Sequence diagrams show concrete I/O.** Prefer `collectionAccess` / `httpAccess` over coarse ctor-only `systems[]`. Draw arrows to short-named system lifelines (D03, LID, Mongo per owning service, …) labeled with verb+path or collection op. Tag `sid.*` / `*.bff.*` Kafka messages as SID / BFF. Cap I/O arrows per use case so charts stay readable. **Failure topics** get a red `rect` / `opt on failure` / `alt success … else on failure` frame; unconsumed publishes get an amber `opt` condition frame.
 
+11. **Infrastructure config is merged, not catalogued per repo** (`extractor/extract-infra.ts`, `/infrastructure`). Each repo re-implements the same `*.config.ts` platform concerns (env, logger, Kafka, Redis, axios, request/reply, per-downstream-system clients) with only minor drift. One `InfraKind` per concern, keyed by a curated `INFRA_KIND_BY_STEM` map — deliberately not "every `*.config.ts`": business config (campaign rules, mission, segmentation, message templates, …) is excluded on purpose, don't widen the scan to include it. Doc comments are pulled from every repo's copy and deduplicated by word-set similarity (`dedupeNotes`, Jaccard ≥ 0.2 — tuned against real Redis config comments reworded per repo; lower it and unrelated notes start merging, raise it and reworded duplicates stop merging). A `systemId` cross-links to the matching `/systems` entry but is **not** the merge key — two concerns can share a downstream system (Kafka client bootstrap vs the request/reply correlation layer on top of it) without being the same file; only `INFRA_KIND_BY_STEM[stem].id` merges stems together (used for genuine aliases like `email`/`graph-email`).
+
 ### Known remaining accuracy issues
 
 - `ApplyLoyaltyEvent` in tmf658 has several handlers on the same topic; the walk fans out to all of them (registration rule, mission earn, generic apply). That is structurally true but noisy on some diagrams.
@@ -179,6 +181,7 @@ Hash router (`HashRouter`) so `dist/` works from any static path.
 | `/database`, `/database/:id`         | Mongo collections grouped by **BFF / LID / SID**; diagram with hover-traced links + **How they link** list; create vs query |
 | `/dependencies`, `/dependencies/:id` | Outbound **axios** HTTP clients grouped by system (D03, SAP, PNS, IKM, …); verb + path; use cases that actually call them |
 | `/systems`                           | Downstream blast radius                                                                                                   |
+| `/infrastructure`                    | Shared `*.config.ts` platform concerns (env, logger, Kafka, Redis, axios, per-system clients) **merged across every repo that has a copy** — doc comments deduplicated, not shown five times |
 | `/releases`                          | Commit/tag provenance + how to regenerate                                                                                 |
 
 Search: MiniSearch built in-browser from `core.json` on first ⌘K. Tokenize camelCase and dotted topic names.
@@ -210,6 +213,7 @@ nlp-flow-docs/
     extract-repo.ts        one snapshot → use cases, endpoints, consumers, schemas, collections, http clients
     extract-collections.ts Mongo collection names, ops, links, columns from *MongoRepository
     extract-http.ts        AxiosService / factory get/post/put/patch/delete calls
+    extract-infra.ts       shared *.config.ts platform concerns, deduped across repos
     flows.ts               stitch E2E graphs + mermaid
     model.ts               shared types
     index.ts               orchestrate + write public/data

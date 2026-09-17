@@ -20,6 +20,8 @@ export type {
   HttpLink,
   HttpOperation,
   HttpVerb,
+  InfraKind,
+  InfraSource,
   MongoCollection,
   RepoDoc,
   RepoStats,
@@ -36,6 +38,7 @@ import type {
   DownstreamSystem,
   Endpoint,
   HttpClient,
+  InfraKind,
   MongoCollection,
   RepoDoc,
   Topic,
@@ -78,6 +81,7 @@ export interface CoreData {
   consumers: Consumer[];
   topics: Topic[];
   systems: DownstreamSystem[];
+  infra: InfraKind[];
   collections: MongoCollection[];
   httpClients: HttpClient[];
   stats: {

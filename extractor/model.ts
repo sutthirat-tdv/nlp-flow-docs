@@ -376,6 +376,35 @@ export interface DownstreamSystem {
   useCaseIds: string[];
 }
 
+/** One repo's copy of a shared infrastructure config module. */
+export interface InfraSource {
+  repoId: string;
+  source: SourceRef;
+  loc: number;
+}
+
+/**
+ * A platform concern (Kafka bootstrap, Redis hardening, logging, ...) that
+ * most or all of the five repos re-implement as their own `*.config.ts`,
+ * usually copy-pasted with minor drift. One entry per concern, merged across
+ * every repo that has a copy, with the doc comments explaining *why* pulled
+ * out and deduplicated rather than left buried five times over.
+ */
+export interface InfraKind {
+  id: string;
+  title: string;
+  /** "downstream" mirrors a DownstreamSystem entry; "platform" is generic (logging, Kafka bootstrap, ...). */
+  category: "downstream" | "platform";
+  /** The matching DownstreamSystem id, when this kind also has a /systems entry. */
+  systemId: string | null;
+  /** Deduplicated operational notes pulled from doc comments across every repo's copy. */
+  notes: string[];
+  /** Env var names any repo's copy reads, merged and sorted. */
+  envVars: string[];
+  /** One entry per repo that has a matching config file, so a reader can compare copies. */
+  sources: InfraSource[];
+}
+
 export interface Catalog {
   generatedAt: string;
   generatorVersion: string;
@@ -389,6 +418,7 @@ export interface Catalog {
   httpClients: HttpClient[];
   flows: Flow[];
   systems: DownstreamSystem[];
+  infra: InfraKind[];
   stats: {
     repos: number;
     useCases: number;
