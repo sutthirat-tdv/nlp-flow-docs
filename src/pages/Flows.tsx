@@ -23,6 +23,18 @@ import type { FlowSummary } from "../types";
 /** Flows per module/feature sub-table before a "+N more" hint takes over. */
 const GROUP_LIMIT = 60;
 
+/**
+ * Domains excluded from this page's listing on request — batch/CMS/health
+ * noise, not business flows. See the comment on `baseFlows` below for why
+ * this is a page-level filter, not a data-pipeline exclusion.
+ */
+const EXCLUDED_DOMAINS = new Set([
+  "cms",
+  "health",
+  "healthcheck",
+  "legacyApi/healthcheck",
+]);
+
 export function FlowsPage() {
   const { core, indexes } = useData();
   const [params, setParams] = useSearchParams();
@@ -35,11 +47,10 @@ export function FlowsPage() {
   // Batch jobs (Nest Commander @Command entries, method "CRON") already have
   // their own dedicated page (/jobs) with the same sequence + hop trace
   // embedded — listing them here too is pure duplication, not a second view
-  // worth having. CMS admin flows (backoffice-bff's `cms` domain — campaign
-  // categories/highlights console screens) are excluded on request; scoped
-  // to that one domain so nothing else merely containing "cms" is caught.
-  // Neither is removed from the generated data itself — /jobs/:id still
-  // reads the exact same Flow object via useFlow() for its own sequence view.
+  // worth having. CMS admin flows and health-check probes (see
+  // EXCLUDED_DOMAINS) are excluded on request. None of this is removed from
+  // the generated data itself — /jobs/:id still reads the exact same Flow
+  // object via useFlow() for its own sequence view.
   const baseFlows = useMemo(() => {
     return core.flowIndex.filter((f) => {
       if (f.entry.kind === "endpoint") {
@@ -47,7 +58,7 @@ export function FlowsPage() {
         if (endpoint && isBatchJob(endpoint.method)) return false;
       }
       const mod = flowModule(f, indexes.endpointById, indexes.consumersByTopic);
-      return mod?.domain !== "cms";
+      return !mod || !EXCLUDED_DOMAINS.has(mod.domain);
     });
   }, [core.flowIndex, indexes.endpointById, indexes.consumersByTopic]);
 
@@ -197,7 +208,8 @@ export function FlowsPage() {
       <p className="dimmer" style={{ fontSize: 12, marginTop: -8 }}>
         Batch jobs have their own page (
         <Link to="/jobs">Batch jobs</Link>) with the same sequence, so they
-        aren't listed again here; CMS admin console flows are scoped out too.
+        aren't listed again here; CMS admin console flows and health-check
+        probes are scoped out too.
       </p>
 
       {groups.length === 0 ? <Empty>No flows match these filters.</Empty> : null}
