@@ -6,8 +6,13 @@
  * none of this is derivable from the extractor. If the source diagram
  * changes, update this page to match — it is not regenerated.
  */
+import { Link } from "react-router-dom";
+
 import { Mermaid } from "../components/Mermaid";
 import { Badge, PageHead, Section } from "../components/ui";
+import { useData } from "../data";
+import { endpointHref } from "../entryLinks";
+import type { Endpoint } from "../types";
 
 const DIAGRAM = `flowchart TB
   legacy["MyAIS Legacy"]
@@ -163,6 +168,52 @@ const RETEST_FLOW: string[] = [
   "decryptPrivilegeQRCode (RestAPI)",
 ];
 
+/**
+ * The names in the diagram are MyAIS's legacy contract method names, not
+ * today's handler/route names — most don't correspond to anything current
+ * (fuzzy matching them produced false positives, e.g. "checkStatusKpoint"
+ * matching "healthCheck", so that approach was dropped). Only link a name
+ * when it's an exact, case-insensitive, UNAMBIGUOUS match to exactly one
+ * openapi-bff endpoint handler — the Legacy API surface MyAIS actually
+ * calls. Everything else stays plain text rather than guess.
+ */
+function buildLegacyHandlerIndex(endpoints: Endpoint[]): Map<string, Endpoint> {
+  const counts = new Map<string, Endpoint[]>();
+  for (const e of endpoints) {
+    if (e.repoId !== "openapi-bff") continue;
+    const key = e.handler.toLowerCase();
+    const list = counts.get(key) ?? [];
+    list.push(e);
+    counts.set(key, list);
+  }
+  const unambiguous = new Map<string, Endpoint>();
+  for (const [key, list] of counts) {
+    if (list.length === 1) unambiguous.set(key, list[0]);
+  }
+  return unambiguous;
+}
+
+/** Strips a trailing "(C1)" / "(RestAPI)" style annotation before matching. */
+function bareApiName(name: string): string {
+  return name.replace(/\s*\([^)]*\)\s*$/, "").trim();
+}
+
+function ApiName({
+  name,
+  index,
+}: {
+  name: string;
+  index: Map<string, Endpoint>;
+}) {
+  const endpoint = index.get(bareApiName(name).toLowerCase());
+  if (!endpoint) return <>{name}</>;
+  return (
+    <Link to={endpointHref(endpoint)} title={`${endpoint.method} ${endpoint.path}`}>
+      {name}
+    </Link>
+  );
+}
+
 const CUT_OFF_NODES = [
   "APIM BFF",
   "MAS",
@@ -173,6 +224,13 @@ const CUT_OFF_NODES = [
 ];
 
 export function MyAisIntegrationPage() {
+  const { core } = useData();
+  const handlerIndex = buildLegacyHandlerIndex(core.endpoints);
+  const linkedCount = [
+    ...SOLUTION_GROUPS.flatMap((g) => g.apis),
+    ...RETEST_FLOW,
+  ].filter((name) => handlerIndex.has(bareApiName(name).toLowerCase())).length;
+
   return (
     <>
       <PageHead title="myAIS legacy integration">
@@ -228,7 +286,17 @@ export function MyAisIntegrationPage() {
       <Section
         title="Solution groups"
         subtitle="which APIs are migrated under which solution"
+        actions={
+          <Link to="/endpoints?surface=legacy">Browse the Legacy API surface →</Link>
+        }
       >
+        <p className="dim" style={{ marginTop: -6 }}>
+          These are MyAIS's legacy contract names, not today's route/handler
+          names — most don't correspond 1:1 to anything currently generated.{" "}
+          {linkedCount} of them do have a confirmed, unambiguous match and are
+          linked to their generated endpoint; browse the Legacy API surface
+          above to look up the rest yourself.
+        </p>
         <div className="grid grid--2">
           {SOLUTION_GROUPS.map((group) => (
             <div key={group.id} className="card">
@@ -240,7 +308,7 @@ export function MyAisIntegrationPage() {
               <ul style={{ margin: 0, paddingLeft: 18 }}>
                 {group.apis.map((api) => (
                   <li key={api} className="mono" style={{ fontSize: 12.5 }}>
-                    {api}
+                    <ApiName name={api} index={handlerIndex} />
                   </li>
                 ))}
               </ul>
@@ -257,7 +325,7 @@ export function MyAisIntegrationPage() {
           <ol style={{ margin: 0, paddingLeft: 18 }}>
             {RETEST_FLOW.map((step) => (
               <li key={step} className="mono" style={{ fontSize: 12.5, padding: "2px 0" }}>
-                {step}
+                <ApiName name={step} index={handlerIndex} />
               </li>
             ))}
           </ol>
