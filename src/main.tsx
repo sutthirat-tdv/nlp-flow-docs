@@ -9,9 +9,9 @@ import './styles.css';
 
 createRoot(document.getElementById('root')!).render(
 	<StrictMode>
-		{/* Hash routing keeps the built assets deployable to any static path or file share —
-		    but AuthGate's /api/auth/* calls only exist on a Cloudflare Pages deployment
-		    with the functions/ directory wired up. See README.md "Access". */}
+		{/* Hash routing keeps the built assets deployable to any static path or file share.
+		    AuthGate has no server dependency — see README.md "Access" for what it does
+		    and does not protect. */}
 		<HashRouter>
 			<AuthGate>{() => (
 				<DataProvider>

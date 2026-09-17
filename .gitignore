@@ -28,9 +28,3 @@ Thumbs.db
 .env
 .env.*
 !.env.example
-
-# Wrangler (Cloudflare Pages Functions) local state and secrets
-.wrangler/
-.dev.vars
-.dev.vars.*
-!.dev.vars.example
