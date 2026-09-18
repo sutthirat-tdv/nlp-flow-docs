@@ -19,6 +19,7 @@ import { ReleasesPage } from "./pages/Releases";
 import { SchemaDetailPage, SchemasPage } from "./pages/Schemas";
 import { ServiceDetailPage, ServicesPage } from "./pages/Services";
 import { SystemsPage } from "./pages/Systems";
+import { TestingNotesPage } from "./pages/TestingNotes";
 import { TopicDetailPage, TopicsPage } from "./pages/Topics";
 import { UseCaseDetailPage, UseCasesPage } from "./pages/UseCases";
 
@@ -64,6 +65,7 @@ function Sidebar({ onSearch }: { onSearch: () => void }) {
       <div className="sidebar__group">
         <div className="sidebar__label">Integrations</div>
         {link("/integrations/myais", "myAIS legacy")}
+        {link("/testing", "Manual testing notes")}
       </div>
 
       <div className="sidebar__group">
@@ -147,6 +149,7 @@ export function App() {
               path="/integrations/myais"
               element={<MyAisIntegrationPage />}
             />
+            <Route path="/testing" element={<TestingNotesPage />} />
             <Route path="/services" element={<ServicesPage />} />
             <Route path="/services/:repoId" element={<ServiceDetailPage />} />
             <Route path="/flows" element={<FlowsPage />} />

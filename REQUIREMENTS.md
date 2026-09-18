@@ -171,6 +171,7 @@ Hash router (`HashRouter`) so `dist/` works from any static path.
 | `/`                                  | Overview: stats, architecture **sequence** diagram, four services, sample entry flows                                     |
 | `/guide`                             | **Hand-written** new-joiner mental model                                                                                  |
 | `/integrations/myais`                | **Hand-written** myAIS legacy integration architecture — transcribed from a diagram, not extracted (systems involved aren't in `repos.config.json`) |
+| `/testing`                           | **Hand-written** manual test scenarios for failure paths that need domain knowledge to reproduce — payload shapes, which fields matter; grounded in reading the real source, not derivable by the extractor |
 | `/services`, `/services/:repoId`     | Layer list, who-talks-to-whom matrix, domains, env vars, version                                                          |
 | `/flows`, `/flows/:flowId`           | Filterable catalog; **mermaid sequence** (time order) with axios/Mongo arrows to D03 / LID / Mongo-(owner) / …; hop trace lists the same I/O detail |
 | `/endpoints`, `/endpoints/:id`       | HTTP catalog by surface (**Back Office**, **Legacy**, OpenAPI/Warranty, IAM); request/response fields; link to flow       |
@@ -189,7 +190,7 @@ Search: MiniSearch built in-browser from `core.json` on first ⌘K. Tokenize cam
 
 Visual: dark theme in `src/styles.css`. Mermaid loaded lazily (`src/components/Mermaid.tsx`).
 
-`/guide` and `/integrations/myais` are the only hand-written **pages** — the latter because the systems it describes (MyBE, PRC, Donut, AC, MAS, ESB On Cloud) aren't in `repos.config.json`, so the extractor has no way to know about them; it exists because a team member supplied a source diagram directly, not because the scope changed. Two narrower exceptions carry hand-written _strings_ inside otherwise-generated pages, both clearly separated from extracted content in the UI: `downstreamSystems[id].description` in `repos.config.json` (shown on `/systems`), and `InfraKindDef.summary` in `extract-infra.ts` (shown on `/infrastructure/:id` as a distinct amber-bordered "Summary" section, used only when the actual code has no doc comments to extract — every one is grounded in having read the real file, not guessed). If platform facts change, update the relevant one of these four places; nothing else should contain hand-written prose.
+`/guide`, `/integrations/myais`, and `/testing` are the only hand-written **pages**. `/integrations/myais` exists because the systems it describes (MyBE, PRC, Donut, AC, MAS, ESB On Cloud) aren't in `repos.config.json` — a team member supplied a source diagram directly, not a scope change. `/testing` exists because "how do I actually force this failure path" (payload shapes, which fields matter) is QA/domain knowledge no static analysis can state about a codebase — add a new `Section` there when the next scenario is worth documenting; every claim on it must be grounded in reading the real source (with source links), never guessed. Two narrower exceptions carry hand-written _strings_ inside otherwise-generated pages, both clearly separated from extracted content in the UI: `downstreamSystems[id].description` in `repos.config.json` (shown on `/systems`), and `InfraKindDef.summary` in `extract-infra.ts` (shown on `/infrastructure/:id` as a distinct amber-bordered "Summary" section, used only when the actual code has no doc comments to extract). If platform facts change, update the relevant one of these five places; nothing else should contain hand-written prose.
 
 ---
 
@@ -221,6 +222,7 @@ nlp-flow-docs/
     auth/                  sign-in gate: AuthGate, AuthContext, session.ts (domain check only, no server)
     pages/Guide.tsx        hand-written new-joiner mental model
     pages/MyAisIntegration.tsx  hand-written myAIS legacy integration (see "Website" hand-written-content list)
+    pages/TestingNotes.tsx      hand-written manual test scenarios (same list)
   public/data/             generated JSON (gitignored if large; regenerate)
   .cache/snapshots/        gitignored
   Dockerfile               build + generate + serve in one image — build context is the PARENT dir (see README "Docker")
