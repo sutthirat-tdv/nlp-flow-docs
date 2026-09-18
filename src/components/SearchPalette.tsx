@@ -156,6 +156,25 @@ export function SearchPalette({ onClose }: { onClose: () => void }) {
       })),
     ];
 
+    // A handful of use cases in the catalog legitimately share a class name
+    // across two different domain folders (e.g. CreatePointTransactionUseCase
+    // under both domains/customer and domains/small-merchant) — the
+    // extractor's id scheme doesn't disambiguate that, so `doc.id` can
+    // collide here. MiniSearch.addAll() throws (not warns) on a duplicate
+    // id, which used to crash this whole component the moment the palette
+    // opened — silently, since the crash happens inside a useMemo during
+    // render. Make ids unique for MiniSearch's bookkeeping only; `route`
+    // still points at the right page for that specific document.
+    const seenIds = new Set<string>();
+    for (const doc of documents) {
+      if (seenIds.has(doc.id)) {
+        let suffix = 2;
+        while (seenIds.has(`${doc.id}#${suffix}`)) suffix++;
+        doc.id = `${doc.id}#${suffix}`;
+      }
+      seenIds.add(doc.id);
+    }
+
     const engine = new MiniSearch<Doc>({
       fields: ["title", "subtitle", "body"],
       storeFields: ["title", "subtitle", "kind", "repoId", "route"],
