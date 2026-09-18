@@ -223,6 +223,8 @@ nlp-flow-docs/
     pages/MyAisIntegration.tsx  hand-written myAIS legacy integration (see "Website" hand-written-content list)
   public/data/             generated JSON (gitignored if large; regenerate)
   .cache/snapshots/        gitignored
+  Dockerfile               build + generate + serve in one image — build context is the PARENT dir (see README "Docker")
+../.dockerignore           parent-level; governs the Dockerfile's build context (sibling checkouts, not just this repo)
 ```
 
 ---

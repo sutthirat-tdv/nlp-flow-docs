@@ -20,6 +20,21 @@ To fetch latest `origin/sit` then rebuild the static site:
 npm run update
 ```
 
+## Docker (build + generate + serve in one step)
+
+Solves the "someone built locally and forgot to upload the `data/` subfolder" class of deploy failure by never having a manual copy step at all — the image bakes in generated data at build time.
+
+**Build context is the *parent* of this directory** (the one containing `nlp-flow-docs/` and every sibling service checkout), not this directory itself — the extractor reads each service via a relative sibling path (`repos.config.json`'s `localPath`), so the build needs them all copied in side by side:
+
+```bash
+cd ..    # the directory that contains nlp-flow-docs/ and every sibling repo
+docker build -f nlp-flow-docs/Dockerfile -t nlp-flow-docs .
+docker run --rm -p 8080:8080 nlp-flow-docs
+# open http://localhost:8080
+```
+
+Generates offline (`npm run generate:offline` — whatever `origin/sit` each sibling already has fetched locally, same as running it by hand) so the build needs no GitHub credentials. Pass `--build-arg FETCH=1` to fetch latest `origin/sit` during the build instead — that needs network + auth to the private repos from inside the build, which isn't wired up here; set that up deliberately if you want it. See the comments at the top of `Dockerfile` for the full reasoning, including why this can't be built from inside `nlp-flow-docs/` alone.
+
 ## Point at a release tag or commit
 
 Edit `repos.config.json` — set that repo's `branch` to a tag (`"2.31.0"`) or a SHA — then `npm run update`. The **Versions & updates** page lists recent tags per repo.
