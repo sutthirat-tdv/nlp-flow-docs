@@ -65,7 +65,7 @@ function Sidebar({ onSearch }: { onSearch: () => void }) {
       <div className="sidebar__group">
         <div className="sidebar__label">Integrations</div>
         {link("/integrations/myais", "myAIS legacy")}
-        {link("/testing", "Manual testing notes")}
+        {link("/testing", "Backdoor testing notes")}
       </div>
 
       <div className="sidebar__group">

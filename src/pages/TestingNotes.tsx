@@ -10,6 +10,93 @@ import { Badge, PageHead, Section, SourceLink, TopicLink } from "../components/u
 import { useData } from "../data";
 import type { SourceRef } from "../types";
 
+/**
+ * Every AC_ENDPOINTS path with a real caller in tmf658, and the exact
+ * TORO_* body fields that caller sends — read off AcPartnerRepository,
+ * AcLineRepository, and the four point-redemption repositories
+ * (kbank/bcp/pointx/pt-max), not guessed. Partner-specific variants are
+ * noted rather than fully enumerated per partner.
+ */
+const AC_ENDPOINT_ROWS: {
+  key: string;
+  path: string;
+  body: string;
+  callers: string;
+}[] = [
+  {
+    key: "VERIFY_SMALL_MERCHANT",
+    path: "api/v1/partner/validate/transaction",
+    body: "TORO_partnerName, TORO_requestDatetime, TORO_partnerRef1, TORO_partnerRef3, TORO_partnerPoint",
+    callers: "AcPartnerRepository.verifySmallMerchant",
+  },
+  {
+    key: "GET_PARTNER_MEMBER_POINT / PARTNER_GET_MEMBER_POINT (same path)",
+    path: "api/v1/partner/getmember/point",
+    body: "TORO_methodType, TORO_partnerName, TORO_requestDatetime, TORO_partnerCardNo, TORO_msisdn, TORO_citizenId?",
+    callers: "AcPartnerRepository.getPartnerMember, *-point-redemption.repository.ts getMemberPoint",
+  },
+  {
+    key: "PAYMENT_CONFIRM",
+    path: "api/v1/partner/payment/confirm",
+    body: "TORO_partnerName, TORO_merchantId, TORO_moneyAmount, TORO_aisPoint, TORO_msisdn, TORO_transactionId",
+    callers: "AcPartnerRepository.paymentConfirm",
+  },
+  {
+    key: "CHECK_PAYMENT_STATUS",
+    path: "api/v1/partner/check/payment/status",
+    body: "TORO_partnerName, TORO_merchantId, TORO_transactionId",
+    callers: "AcPartnerRepository.checkPaymentStatus",
+  },
+  {
+    key: "UNLINK_PARTNER_ACCOUNT",
+    path: "api/v1/partner/unlink/account",
+    body: "POINTX: TORO_partnerName, TORO_partnerCardNo, TORO_msisdn — KBANK adds TORO_requestDatetime — BCP: never calls AC, returns success locally",
+    callers: "AcPartnerRepository.unlinkPartnerAccount",
+  },
+  {
+    key: "REQUEST_PARTNER_OTP",
+    path: "api/v1/partner/otp/request",
+    body: "POINTX only: TORO_partnerName, TORO_partnerCardNo",
+    callers: "AcPartnerRepository.requestPartnerOtp",
+  },
+  {
+    key: "VERIFY_PARTNER_OTP",
+    path: "api/v1/partner/otp/verify",
+    body: "POINTX only: TORO_partnerName, TORO_partnerCardNo, TORO_otpCode, TORO_otpRefCode",
+    callers: "AcPartnerRepository.verifyPartnerOtp",
+  },
+  {
+    key: "PARTNER_GET_MEMBER_INFO",
+    path: "api/v1/partner/getmember/info",
+    body: "POINTX only: TORO_partnerName, TORO_partnerCardNo",
+    callers: "AcPartnerRepository.getPartnerMemberInfo",
+  },
+  {
+    key: "PARTNER_ADD_POINT",
+    path: "api/v1/partner/add/point",
+    body: "TORO_partnerName, TORO_transactionId, TORO_requestDatetime, TORO_partnerCardNo, TORO_partnerPoint, TORO_aisPoint, TORO_msisdn, TORO_partnerCardName?",
+    callers: "AcPartnerRepository.addPoint",
+  },
+  {
+    key: "PARTNER_PHONE_TO_ELIGIBILITY",
+    path: "api/v1/partner/phone_to_eligibility",
+    body: "TORO_partnerName, TORO_msisdn, TORO_packageId, TORO_transactionId",
+    callers: "AcLineRepository.partnerPhoneToEligibility",
+  },
+  {
+    key: "PARTNER_NOTIFY_PAYMENT_PASS",
+    path: "api/v1/partner/notify_payment_pass",
+    body: "TORO_partnerName, TORO_msisdn, TORO_packageId, TORO_transactionId",
+    callers: "AcLineRepository.partnerNotifyPaymentPass",
+  },
+  {
+    key: "PARTNER_REDEEM_POINT",
+    path: "api/v1/partner/redeem/point",
+    body: "KBank/BCP/PointX (identical shape): TORO_partnerName, TORO_requestDatetime, TORO_msisdn, TORO_partnerCardNo, TORO_partnerPoint, TORO_aisPoint, TORO_transactionId — PTMAX differs: TORO_partnerName, TORO_requestDatetime, TORO_partnerCardName, TORO_partnerCardNo, TORO_partnerMemberCardNo, TORO_partnerPoint",
+    callers: "*-point-redemption.repository.ts redeemPoint (kbank/bcp/pointx/pt-max, one class each)",
+  },
+];
+
 function useSourceRef() {
   const { indexes } = useData();
   return (repoId: string, file: string, line: number): SourceRef | null => {
@@ -67,14 +154,17 @@ export function TestingNotesPage() {
     "src/loyaltyManagement/consumers/_developer-event.consumer.controller.ts",
     24,
   );
+  const srcAcConfig = source("tmf658", "src/configs/ac.config.ts", 27);
 
   return (
     <>
-      <PageHead title="Manual testing notes">
-        Ad hoc scenarios worth documenting once someone has actually traced
-        through the code to force them — payload shapes and which fields
-        matter, not something the generated catalogs can state about
-        themselves. Add a section here when the next one comes up.
+      <PageHead title="Backdoor testing notes">
+        <code>_developer</code>-only hooks and debug backdoors that are real
+        code on <code>origin/sit</code> but deliberately excluded from every
+        generated catalog on this site (REQUIREMENTS.md's extractor rules) —
+        documented here instead, since "how do I actually trigger this" is
+        domain knowledge no static analysis can state about itself. Add a
+        section here when the next one comes up.
       </PageHead>
 
       <Section
@@ -228,6 +318,61 @@ export function TestingNotesPage() {
               line on failure.
             </li>
           </ul>
+        </div>
+      </Section>
+
+      <Section
+        title="AC endpoints — real url/body pairs to try"
+        subtitle="every AC_ENDPOINTS path actually called, and the exact TORO_* body fields sent — read straight off AcPartnerRepository, AcLineRepository, and the four point-redemption repositories, not guessed"
+      >
+        <div className="card">
+          <p className="dim">
+            <code>url</code> is <code>{"{AC_BASE_URL}/{path below}"}</code> —{" "}
+            <code>AC_BASE_URL</code> is an env var (see{" "}
+            {srcAcConfig ? (
+              <SourceLink source={srcAcConfig} label="ac.config.ts" />
+            ) : (
+              "ac.config.ts"
+            )}
+            ), not something this page can give you a real value for.{" "}
+            <code>TORO_partnerName</code> must be one of{" "}
+            <code>acConfig.PARTNER_CODES</code> — also env-configured, default
+            values <code>KPT</code> (KBank) / <code>BCP</code> (Bangchak) /{" "}
+            <code>PTX</code> (PointX) / <code>PTM</code> (PTMAX) /{" "}
+            <code>KSC</code>.
+          </p>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>AC_ENDPOINTS key</th>
+                  <th>path</th>
+                  <th>body fields</th>
+                  <th>called from</th>
+                </tr>
+              </thead>
+              <tbody>
+                {AC_ENDPOINT_ROWS.map((row) => (
+                  <tr key={row.key}>
+                    <td className="mono">{row.key}</td>
+                    <td className="mono dim">{row.path}</td>
+                    <td className="mono dim" style={{ fontSize: 12 }}>
+                      {row.body}
+                    </td>
+                    <td className="dim" style={{ fontSize: 12 }}>
+                      {row.callers}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="dim" style={{ marginTop: 10 }}>
+            <code>AUTHENTICATE</code> (
+            <span className="mono">api/v1/partner/authenticate</span>) is
+            declared in <code>AC_ENDPOINTS</code> but not called from
+            anywhere in tmf658 — dead config, not a usable path.
+          </p>
         </div>
       </Section>
     </>
