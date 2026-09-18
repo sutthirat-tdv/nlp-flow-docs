@@ -10,90 +10,250 @@ import { Badge, PageHead, Section, SourceLink, TopicLink } from "../components/u
 import { useData } from "../data";
 import type { SourceRef } from "../types";
 
-/**
- * Every AC_ENDPOINTS path with a real caller in tmf658, and the exact
- * TORO_* body fields that caller sends — read off AcPartnerRepository,
- * AcLineRepository, and the four point-redemption repositories
- * (kbank/bcp/pointx/pt-max), not guessed. Partner-specific variants are
- * noted rather than fully enumerated per partner.
- */
-const AC_ENDPOINT_ROWS: {
+/** Placeholder values only — obviously fake, never real customer/transaction data. */
+const PLACEHOLDER_DATETIME = "2026-01-01T00:00:00.000Z";
+const PLACEHOLDER_MSISDN = "0812345678";
+const PLACEHOLDER_CARD_NO = "1234567890";
+
+interface AcEndpointVariant {
+  /** Which partner this shape applies to — omitted when every partner sends the same shape. */
+  label?: string;
+  sample: Record<string, unknown>;
+}
+
+interface AcEndpointRow {
   key: string;
   path: string;
-  body: string;
+  variants: AcEndpointVariant[];
   callers: string;
-}[] = [
+  note?: string;
+}
+
+/**
+ * Every AC_ENDPOINTS path with a real caller in tmf658, and a concrete
+ * sample body for each — read off AcPartnerRepository, AcLineRepository, and
+ * the four point-redemption repositories (kbank/bcp/pointx/pt-max), not
+ * guessed. Two fields (TORO_moneyAmount, TORO_aisPoint on PAYMENT_CONFIRM)
+ * are sent as strings, not numbers, because the calling code does
+ * `.toString()` on them before building the body — sample reflects the
+ * actual wire shape, not the input DTO's types.
+ */
+const AC_ENDPOINT_ROWS: AcEndpointRow[] = [
   {
     key: "VERIFY_SMALL_MERCHANT",
     path: "api/v1/partner/validate/transaction",
-    body: "TORO_partnerName, TORO_requestDatetime, TORO_partnerRef1, TORO_partnerRef3, TORO_partnerPoint",
     callers: "AcPartnerRepository.verifySmallMerchant",
+    variants: [
+      {
+        sample: {
+          TORO_partnerName: "KPT",
+          TORO_requestDatetime: PLACEHOLDER_DATETIME,
+          TORO_partnerRef1: "REF-0001",
+          TORO_partnerRef3: "REF-0003",
+          TORO_partnerPoint: 100,
+        },
+      },
+    ],
   },
   {
     key: "GET_PARTNER_MEMBER_POINT / PARTNER_GET_MEMBER_POINT (same path)",
     path: "api/v1/partner/getmember/point",
-    body: "TORO_methodType, TORO_partnerName, TORO_requestDatetime, TORO_partnerCardNo, TORO_msisdn, TORO_citizenId?",
     callers: "AcPartnerRepository.getPartnerMember, *-point-redemption.repository.ts getMemberPoint",
+    note: "TORO_citizenId is optional, omitted here.",
+    variants: [
+      {
+        sample: {
+          TORO_methodType: "3",
+          TORO_partnerName: "KPT",
+          TORO_requestDatetime: PLACEHOLDER_DATETIME,
+          TORO_partnerCardNo: PLACEHOLDER_CARD_NO,
+          TORO_msisdn: PLACEHOLDER_MSISDN,
+        },
+      },
+    ],
   },
   {
     key: "PAYMENT_CONFIRM",
     path: "api/v1/partner/payment/confirm",
-    body: "TORO_partnerName, TORO_merchantId, TORO_moneyAmount, TORO_aisPoint, TORO_msisdn, TORO_transactionId",
     callers: "AcPartnerRepository.paymentConfirm",
+    variants: [
+      {
+        sample: {
+          TORO_partnerName: "KPT",
+          TORO_merchantId: "MERCHANT-0001",
+          TORO_moneyAmount: "500",
+          TORO_aisPoint: "500",
+          TORO_msisdn: PLACEHOLDER_MSISDN,
+          TORO_transactionId: "TXN-0001",
+        },
+      },
+    ],
   },
   {
     key: "CHECK_PAYMENT_STATUS",
     path: "api/v1/partner/check/payment/status",
-    body: "TORO_partnerName, TORO_merchantId, TORO_transactionId",
     callers: "AcPartnerRepository.checkPaymentStatus",
+    variants: [
+      {
+        sample: {
+          TORO_partnerName: "KPT",
+          TORO_merchantId: "MERCHANT-0001",
+          TORO_transactionId: "TXN-0001",
+        },
+      },
+    ],
   },
   {
     key: "UNLINK_PARTNER_ACCOUNT",
     path: "api/v1/partner/unlink/account",
-    body: "POINTX: TORO_partnerName, TORO_partnerCardNo, TORO_msisdn — KBANK adds TORO_requestDatetime — BCP: never calls AC, returns success locally",
     callers: "AcPartnerRepository.unlinkPartnerAccount",
+    note: "BCP never calls AC for this — it returns success locally without a request.",
+    variants: [
+      {
+        label: "POINTX",
+        sample: {
+          TORO_partnerName: "PTX",
+          TORO_partnerCardNo: PLACEHOLDER_CARD_NO,
+          TORO_msisdn: PLACEHOLDER_MSISDN,
+        },
+      },
+      {
+        label: "KBANK",
+        sample: {
+          TORO_partnerName: "KPT",
+          TORO_partnerCardNo: PLACEHOLDER_CARD_NO,
+          TORO_msisdn: PLACEHOLDER_MSISDN,
+          TORO_requestDatetime: PLACEHOLDER_DATETIME,
+        },
+      },
+    ],
   },
   {
     key: "REQUEST_PARTNER_OTP",
     path: "api/v1/partner/otp/request",
-    body: "POINTX only: TORO_partnerName, TORO_partnerCardNo",
     callers: "AcPartnerRepository.requestPartnerOtp",
+    note: "Only PointX is implemented — every other partner throws before sending a request.",
+    variants: [
+      {
+        label: "POINTX",
+        sample: {
+          TORO_partnerName: "PTX",
+          TORO_partnerCardNo: PLACEHOLDER_CARD_NO,
+        },
+      },
+    ],
   },
   {
     key: "VERIFY_PARTNER_OTP",
     path: "api/v1/partner/otp/verify",
-    body: "POINTX only: TORO_partnerName, TORO_partnerCardNo, TORO_otpCode, TORO_otpRefCode",
     callers: "AcPartnerRepository.verifyPartnerOtp",
+    note: "Only PointX is implemented.",
+    variants: [
+      {
+        label: "POINTX",
+        sample: {
+          TORO_partnerName: "PTX",
+          TORO_partnerCardNo: PLACEHOLDER_CARD_NO,
+          TORO_otpCode: "123456",
+          TORO_otpRefCode: "OTPREF-0001",
+        },
+      },
+    ],
   },
   {
     key: "PARTNER_GET_MEMBER_INFO",
     path: "api/v1/partner/getmember/info",
-    body: "POINTX only: TORO_partnerName, TORO_partnerCardNo",
     callers: "AcPartnerRepository.getPartnerMemberInfo",
+    note: "Only PointX is implemented.",
+    variants: [
+      {
+        label: "POINTX",
+        sample: {
+          TORO_partnerName: "PTX",
+          TORO_partnerCardNo: PLACEHOLDER_CARD_NO,
+        },
+      },
+    ],
   },
   {
     key: "PARTNER_ADD_POINT",
     path: "api/v1/partner/add/point",
-    body: "TORO_partnerName, TORO_transactionId, TORO_requestDatetime, TORO_partnerCardNo, TORO_partnerPoint, TORO_aisPoint, TORO_msisdn, TORO_partnerCardName?",
     callers: "AcPartnerRepository.addPoint",
+    note: "TORO_partnerCardName is optional.",
+    variants: [
+      {
+        sample: {
+          TORO_partnerName: "KPT",
+          TORO_transactionId: "TXN-0001",
+          TORO_requestDatetime: PLACEHOLDER_DATETIME,
+          TORO_partnerCardNo: PLACEHOLDER_CARD_NO,
+          TORO_partnerPoint: 100,
+          TORO_aisPoint: 100,
+          TORO_msisdn: PLACEHOLDER_MSISDN,
+          TORO_partnerCardName: "TEST USER",
+        },
+      },
+    ],
   },
   {
     key: "PARTNER_PHONE_TO_ELIGIBILITY",
     path: "api/v1/partner/phone_to_eligibility",
-    body: "TORO_partnerName, TORO_msisdn, TORO_packageId, TORO_transactionId",
     callers: "AcLineRepository.partnerPhoneToEligibility",
+    variants: [
+      {
+        sample: {
+          TORO_partnerName: "KPT",
+          TORO_msisdn: PLACEHOLDER_MSISDN,
+          TORO_packageId: "PKG-0001",
+          TORO_transactionId: "TXN-0001",
+        },
+      },
+    ],
   },
   {
     key: "PARTNER_NOTIFY_PAYMENT_PASS",
     path: "api/v1/partner/notify_payment_pass",
-    body: "TORO_partnerName, TORO_msisdn, TORO_packageId, TORO_transactionId",
     callers: "AcLineRepository.partnerNotifyPaymentPass",
+    variants: [
+      {
+        sample: {
+          TORO_partnerName: "KPT",
+          TORO_msisdn: PLACEHOLDER_MSISDN,
+          TORO_packageId: "PKG-0001",
+          TORO_transactionId: "TXN-0001",
+        },
+      },
+    ],
   },
   {
     key: "PARTNER_REDEEM_POINT",
     path: "api/v1/partner/redeem/point",
-    body: "KBank/BCP/PointX (identical shape): TORO_partnerName, TORO_requestDatetime, TORO_msisdn, TORO_partnerCardNo, TORO_partnerPoint, TORO_aisPoint, TORO_transactionId — PTMAX differs: TORO_partnerName, TORO_requestDatetime, TORO_partnerCardName, TORO_partnerCardNo, TORO_partnerMemberCardNo, TORO_partnerPoint",
     callers: "*-point-redemption.repository.ts redeemPoint (kbank/bcp/pointx/pt-max, one class each)",
+    variants: [
+      {
+        label: "KBANK / BCP / POINTX (identical shape)",
+        sample: {
+          TORO_partnerName: "KPT",
+          TORO_requestDatetime: PLACEHOLDER_DATETIME,
+          TORO_msisdn: PLACEHOLDER_MSISDN,
+          TORO_partnerCardNo: PLACEHOLDER_CARD_NO,
+          TORO_partnerPoint: 100,
+          TORO_aisPoint: 100,
+          TORO_transactionId: "TXN-0001",
+        },
+      },
+      {
+        label: "PTMAX",
+        sample: {
+          TORO_partnerName: "PTM",
+          TORO_requestDatetime: PLACEHOLDER_DATETIME,
+          TORO_partnerCardName: "TEST USER",
+          TORO_partnerCardNo: PLACEHOLDER_CARD_NO,
+          TORO_partnerMemberCardNo: PLACEHOLDER_CARD_NO,
+          TORO_partnerPoint: 100,
+        },
+      },
+    ],
   },
 ];
 
@@ -346,18 +506,45 @@ export function TestingNotesPage() {
               <thead>
                 <tr>
                   <th>AC_ENDPOINTS key</th>
-                  <th>path</th>
-                  <th>body fields</th>
+                  <th className="nowrap">path</th>
+                  <th>sample body</th>
                   <th>called from</th>
                 </tr>
               </thead>
               <tbody>
                 {AC_ENDPOINT_ROWS.map((row) => (
                   <tr key={row.key}>
-                    <td className="mono">{row.key}</td>
-                    <td className="mono dim">{row.path}</td>
-                    <td className="mono dim" style={{ fontSize: 12 }}>
-                      {row.body}
+                    <td className="mono" style={{ fontSize: 12 }}>
+                      {row.key}
+                    </td>
+                    <td className="mono dim nowrap">{row.path}</td>
+                    <td style={{ minWidth: 320 }}>
+                      {row.variants.map((variant, i) => (
+                        <div key={variant.label ?? i} style={{ marginBottom: 8 }}>
+                          {variant.label ? (
+                            <div
+                              className="dimmer"
+                              style={{ fontSize: 11, marginBottom: 2 }}
+                            >
+                              {variant.label}
+                            </div>
+                          ) : null}
+                          <pre
+                            className="mono"
+                            style={{ fontSize: 11.5, margin: 0, overflowX: "auto" }}
+                          >
+                            {JSON.stringify(variant.sample, null, 2)}
+                          </pre>
+                        </div>
+                      ))}
+                      {row.note ? (
+                        <p
+                          className="dimmer"
+                          style={{ fontSize: 11, margin: "6px 0 0" }}
+                        >
+                          {row.note}
+                        </p>
+                      ) : null}
                     </td>
                     <td className="dim" style={{ fontSize: 12 }}>
                       {row.callers}
