@@ -35,6 +35,22 @@ docker run --rm -p 8080:8080 nlp-flow-docs
 
 Generates offline (`npm run generate:offline` — whatever `origin/sit` each sibling already has fetched locally, same as running it by hand) so the build needs no GitHub credentials. Pass `--build-arg FETCH=1` to fetch latest `origin/sit` during the build instead — that needs network + auth to the private repos from inside the build, which isn't wired up here; set that up deliberately if you want it. See the comments at the top of `Dockerfile` for the full reasoning, including why this can't be built from inside `nlp-flow-docs/` alone.
 
+## Vercel
+
+**Do not use Vercel's normal git-integration auto-deploy for this project** (push to a connected branch → Vercel builds in its own cloud environment). That environment only clones this one repository — it has no sibling checkouts, so `npm run generate`/`generate:offline` cannot run there. `vercel.json` sets `buildCommand: "npm run update"` specifically so that if Vercel's own build *does* run, it fails loudly (missing repo error) instead of silently shipping a site with no `data/` — which is what happened before this file existed: the auto-detected build was a bare `vite build`, succeeded trivially, and shipped `dist/` with an empty `data/` (the exact "Documentation data is missing" 404 this section exists to prevent). Turn off auto-deploy in the Vercel project's Git settings once this is in place, or every push will show a failed build.
+
+Instead, build where the sibling repos actually are (your machine, or any CI runner that checks them out), then push the finished artifact — Vercel never touches source:
+
+```bash
+npx vercel login                 # once, your Vercel account
+npx vercel link                  # once, links this directory to a Vercel project
+npx vercel pull --yes --environment=production
+npx vercel build --prod          # runs buildCommand locally, where the siblings exist
+npx vercel deploy --prebuilt --prod   # uploads the already-built .vercel/output — no remote build
+```
+
+`vercel build` and `vercel deploy --prebuilt` are two different steps on purpose: the first must run somewhere with the sibling repos (this directory, right now, via the same `npm run update` the Docker/local flows use); the second only uploads what the first already produced and needs no source access at all.
+
 ## Point at a release tag or commit
 
 Edit `repos.config.json` — set that repo's `branch` to a tag (`"2.31.0"`) or a SHA — then `npm run update`. The **Versions & updates** page lists recent tags per repo.

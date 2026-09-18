@@ -24,6 +24,9 @@ Thumbs.db
 .vscode/
 *.tsbuildinfo
 
+# Vercel CLI project link + local build output (see README "Vercel")
+.vercel/
+
 # Env (none committed; example lives in the four service repos)
 .env
 .env.*
