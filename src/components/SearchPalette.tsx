@@ -43,6 +43,7 @@ export function SearchPalette({ onClose }: { onClose: () => void }) {
   const [query, setQuery] = useState("");
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   const { search, docs } = useMemo(() => {
     const documents: Doc[] = [
@@ -216,6 +217,16 @@ export function SearchPalette({ onClose }: { onClose: () => void }) {
     setCursor(0);
   }, [query]);
 
+  // Arrow keys move `cursor`, which re-renders the .active class onto a
+  // different row — but the results list scrolls independently, so without
+  // this the highlighted row can move right off the visible area with
+  // nothing on screen to show it happened.
+  useEffect(() => {
+    resultsRef.current
+      ?.querySelector(".palette__item.active")
+      ?.scrollIntoView({ block: "nearest" });
+  }, [cursor]);
+
   const go = (doc: Doc | undefined) => {
     if (!doc) return;
     navigate(doc.route);
@@ -244,7 +255,7 @@ export function SearchPalette({ onClose }: { onClose: () => void }) {
             if (e.key === "Enter") go(results[cursor]);
           }}
         />
-        <div className="palette__results">
+        <div className="palette__results" ref={resultsRef}>
           {results.length === 0 ? (
             <div
               style={{

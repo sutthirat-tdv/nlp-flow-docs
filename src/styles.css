@@ -1381,6 +1381,13 @@ tbody tr:hover {
 
 .palette__results {
   overflow-y: auto;
+  /* Without these, this flex child sizes to its content instead of
+     shrinking to the space .palette's max-height leaves it — the list
+     grows past the dialog and gets clipped by .palette's overflow:hidden
+     instead of actually scrolling, so a keyboard-selected item past the
+     fold is invisible with no way to reach it. */
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .palette__item {
